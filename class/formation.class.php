@@ -43,11 +43,10 @@ class Tformation extends TObjetStd
 		
 		$this->set_table(MAIN_DB_PREFIX.'formation');
 		
-		$this->add_champs('ref', array('type' => 'string', 'length' => 80, 'index' => true));
-		$this->add_champs('label', array('type' => 'string'));
-		$this->add_champs('status', array('type' => 'integer'));
-		
-		$this->add_champs('entity,fk_user_author', array('type' => 'integer', 'index' => true));
+		$this->add_champs('cost', array('type' => 'double', 'index' => true));
+		$this->add_champs('subject', array('type' => 'string'));
+	//	$this->add_champs('status', array('type' => 'integer'));
+	//	$this->add_champs('entity,fk_user_author', array('type' => 'integer', 'index' => true));
 //		$this->add_champs('date_other,date_other_2', array('type' => 'date'));
 //		$this->add_champs('note', array('type' => 'text'));
 		
@@ -244,18 +243,60 @@ class Tformation extends TObjetStd
  */
 class Formation extends Tformation
 {
-	private $PDOdb;
+
+	protected $id;
+	protected $cost;
+	protected $subject;
+
 	
-	public function __construct()
+	public function __construct($db)
 	{
-		parent::__construct();
-		
-		$this->PDOdb = new TPDOdb;
+		$this->db = $db;
+		return 0;
 	}
 	
 	function fetch($id)
 	{
-		return $this->load($this->PDOdb, $id);
+		$sql = "SELECT f.rowid, f.cost, f.subject";
+		$sql.= " FROM ".MAIN_DB_PREFIX."formation as f";
+		$sql.= " WHERE f.rowid=".$id;
+
+		$res = $this->db->query($sql);
+		if ($res) {
+			$obj = $this->db->fetch_object($res);
+
+			$this->id = $obj->rowid;
+			$this->cost = $obj->cost;
+			$this->subject = $obj->subject;
+
+			return 1;
+		}
+		else {
+			return -1;
+		}
+	}
+
+	public function listFormationForUser($idUser) {
+
+		$sql = "SELECT f.rowid";
+		$sql.= " FROM ".MAIN_DB_PREFIX."formation as f";
+		$sql.= " WHERE f.fk_user=".$idUser;
+
+		$result = $this->db->query($sql);
+		if ($result) {
+			while ($obj = $this->db->fetch_object($result)) {
+				$newFormation=new Formation($this->db);
+				$newFormation->fetch($obj->rowid);
+				$ret[$obj->rowid]=$newFormation;
+			}
+
+			return $ret;
+		}
+
+		else {
+			return -1;
+		}
+
 	}
 }
 

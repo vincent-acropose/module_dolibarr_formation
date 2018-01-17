@@ -139,7 +139,9 @@ class modformation extends DolibarrModules
 		// 'stock'            to add a tab in stock view
 		// 'thirdparty'       to add a tab in third party view
 		// 'user'             to add a tab in user view
-        $this->tabs = array();
+        $this->tabs = array(
+        	'user:+formation:formationMenu:formation@formation:$user->rights->formation->read:/formation/list.php?id=__ID__'
+        );
 
         // Dictionaries
 	    if (! isset($conf->formation->enabled))
@@ -182,21 +184,21 @@ class modformation extends DolibarrModules
 		// $this->rights[$r][4] = 'level1';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		// $this->rights[$r][5] = 'level2';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		// $r++;
-/*
+
 		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
-		$this->rights[$r][1] = 'formation_read';	// Permission label
+		$this->rights[$r][1] = 'Voir les formations';	// Permission label
 		$this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
 		$this->rights[$r][4] = 'read';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$r++;
 		
 		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
-		$this->rights[$r][1] = 'formation_write';	// Permission label
+		$this->rights[$r][1] = 'Créer des formations';	// Permission label
 		$this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
 		$this->rights[$r][4] = 'write';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$r++;
-*/
+
 
 		// Main menu entries
 		$this->menu = array();			// List of menus to add

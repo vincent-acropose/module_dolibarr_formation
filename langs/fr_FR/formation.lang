@@ -9,7 +9,7 @@ formationAbout = A propos du module formation
 formation=formation
 
 # MENU
-TopMenuformation=formation
+formationMenu=Formations
 
 # STATUS
 formationStatusDraft=Brouillon (à valider)
@@ -23,7 +23,7 @@ Refused=Refusé
 Accepted=Accepté
 
 # LIST
-formationList=Liste formation
+formationList=Liste des formations
 Noformation=(vide)
 
 # CARD
@@ -39,3 +39,8 @@ Modify=Modifier
 Reopen=Rouvrir
 ToClone=Cloner
 Delete=Supprimer
+
+# FORM LIST
+DateCre=Date Début
+DateMaj=Date Fin
+ListOfTraining=Liste des formations
