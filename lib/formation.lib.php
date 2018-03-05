@@ -60,12 +60,12 @@ function formationAdminPrepareHead()
  * @param 	Tformation	$object		Object company shown
  * @return 	array				Array of tabs
  */
-function formation_prepare_head(Tformation $object)
+function formation_prepare_head(Formation $object)
 {
     global $db, $langs, $conf, $user;
     $h = 0;
     $head = array();
-    $head[$h][0] = dol_buildpath('/formation/card.php', 1).'?id='.$object->getId();
+    $head[$h][0] = dol_buildpath('/formation/card.php', 1).'?id='.$object->id;
     $head[$h][1] = $langs->trans("formationCard");
     $head[$h][2] = 'card';
     $h++;
@@ -82,7 +82,6 @@ function formation_prepare_head(Tformation $object)
 function getFormConfirm(&$PDOdb, &$form, &$object, $action)
 {
     global $langs,$conf,$user;
-
     $formconfirm = '';
 
     if ($action == 'validate' && !empty($user->rights->formation->write))
@@ -100,6 +99,5 @@ function getFormConfirm(&$PDOdb, &$form, &$object, $action)
         $text = $langs->trans('ConfirmCloneformation', $object->ref);
         $formconfirm = $form->formconfirm($_SERVER['PHP_SELF'] . '?id=' . $object->id, $langs->trans('Cloneformation'), $text, 'confirm_clone', '', 0, 1);
     }
-
     return $formconfirm;
 }

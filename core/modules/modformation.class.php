@@ -140,7 +140,7 @@ class modformation extends DolibarrModules
 		// 'thirdparty'       to add a tab in third party view
 		// 'user'             to add a tab in user view
         $this->tabs = array(
-        	'user:+formation:formationMenu:formation@formation:$user->rights->formation->read:/formation/list.php?id=__ID__'
+        	//'user:+formation:formationMenu:formation@formation:$user->rights->formation->read:/formation/list.php?id=__ID__'
         );
 
         // Dictionaries
@@ -236,14 +236,14 @@ class modformation extends DolibarrModules
 		//							'user'=>2);				                // 0=Menu for internal users, 1=external users, 2=both
 		// $r++;
 		
-/*
+
 		$this->menu[$r]=array(	
 			'fk_menu'=>0,			                // Put 0 if this is a top menu
 			'type'=>'top',			                // This is a Top menu entry
 			'titre'=>$langs->trans('TopMenuformation'),
 			'mainmenu'=>'formation',
 			'leftmenu'=>'',
-			'url'=>'/formation/list.php',
+			'url'=>'/formation/index.php',
 			'langs'=>'formation@formation',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>100+$r,
 			'enabled'=>'$conf->formation->enabled',	// Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled.
@@ -259,7 +259,7 @@ class modformation extends DolibarrModules
 			'titre'=>$langs->trans('TopMenuformation'),
 			'mainmenu'=>'formation',
 			'leftmenu'=>'formation_left',
-			'url'=>'/formation/list.php',
+			'url'=>'/formation/index.php',
 			'langs'=>'formation@formation',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>100+$r,
 			'enabled'=>'$conf->formation->enabled',	// Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled.
@@ -296,12 +296,12 @@ class modformation extends DolibarrModules
 			'langs'=>'formation@formation',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>100+$r,
 			'enabled'=> '$conf->formation->enabled',  // Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
-			'perms'=> '$user->rights->formation->write',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
+			'perms'=> '$user->rights->formation->read',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
 			'target'=>'',
 			'user'=>2
 		);				                // 0=Menu for internal users, 1=external users, 2=both
 		$r++;
-*/
+
 		
 		// Exports
 		$r=1;

@@ -6,21 +6,36 @@ ATMAbout = Ce module a été développé par <a href="http://www.atm-consulting.
 formationSetup = Configuration du module formation
 formationAbout = A propos du module formation
 
-formation=formation
+formation=Formation
+
+# LIENS
+Showformation=Afficher formation
+Totalht=Total HT
 
 # MENU
 formationMenu=Formations
+TopMenuformation=Formations
+LeftMenuformationCreate=Nouvelle formation
+LeftMenuformationList=Liste
 
 # STATUS
 formationStatusDraft=Brouillon (à valider)
-formationStatusValidated=Validée (à accepter)
-formationStatusRefused=Refusée (fermée)
-formationStatusAccepted=Acceptée (fermée)
+formationStatusValidated=Validée (à prévoir)
+formationStatusPrediction=Prédictionnel
+formationStatusFinish=Terminée (fermée)
+formationStatusCancel=Annulée (fermée)
 
 Draft=Brouillon
 Validate=Validé
-Refused=Refusé
+Cancel=Annulé
 Accepted=Accepté
+Finish=Terminé
+
+# INDEX
+TrainingArea=Espace formations
+TrainingDraft=Formations en brouillon
+TrainingOpen=Formations ouvertes
+TrainingPrediction=Formations prévisionnelles
 
 # LIST
 formationList=Liste des formations
@@ -29,12 +44,25 @@ Noformation=(vide)
 # CARD
 Newformation=Création formation
 formationCard=Fiche formation
+RefTraining=Service
+NameUser=Collaborateur
+DateTraining=Date de formation
+Training = Formation
+PriceP=Coût Pédagogique
+PriceS=Coût Salariale
+PriceT=Total HT
+Help=Aides
+InCharge=Reste à charge
+TrainingDate=Date de formation
+DalayH = Durée (Heure)
+DelayD = Durée (Jours)
 
 # CARD TPL
 Save=Enregistrer
 CreateDraft=Créer brouillon
 Cancel=Annuler
 Validate=Valider
+Predict=Prévoir
 Modify=Modifier
 Reopen=Rouvrir
 ToClone=Cloner
@@ -43,4 +71,20 @@ Delete=Supprimer
 # FORM LIST
 DateCre=Date Début
 DateMaj=Date Fin
-ListOfTraining=Liste des formations
+ListOfTraining=Liste des formations pour cette utilisateur
+
+# CONFIRM
+ValidateTraining=Valider la Formation
+ConfirmValidate=Etes-vous sur de vouloir valider la formation
+CloneTraining=Cloner la formation
+ConfirmClone=Etes-vous sur de vouloir cloner la formation
+DeletreTraining=Supprimer la formation
+ConfirmDelete=Etes-vous sur de vouloir supprimer la formation
+PredictTraining=Prévoir la formation
+ConfirmPrediction=Etes-vous sur de vouloir prévoir la formation
+FinishTraining=Terminer la formation
+ConfirmFinish=Etes-vous sur de vouloir terminer la formation
+CancelTraining=Annuler la formation
+ConfirmCancel=Etes-vous sur de vouloir annuler la formation
+ReopenTraining=Re-ouvrir la formation
+ConfirmReopen=Etes-vous sur de vouloir re-ouvrir la formation
