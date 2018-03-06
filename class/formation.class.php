@@ -83,7 +83,7 @@ class Formation extends CommonObject
 
 				$this->fk_product = $product->id;
 				if (!empty($value['dated'])) {
-					if (preg_match('^[0-9]+/[0-9]+/[0-9]+$', $value['dated'])) {
+					if (preg_match('#^[0-9]+/[0-9]+/[0-9]+$#', $value['dated'])) {
 
 						$date = explode("/", $value['dated']);
 						$this->dated = $date[2]."-".$date[1]."-".$date[0];
