@@ -40,9 +40,11 @@ TrainingPrediction=Formations prévisionnelles
 # LIST
 formationList=Liste des formations
 Noformation=(vide)
+begin=Date de Début
 
 # CARD
 Newformation=Création formation
+Editformation=Modifier formation
 formationCard=Fiche formation
 RefTraining=Service
 NameUser=Collaborateur
@@ -56,6 +58,7 @@ InCharge=Reste à charge
 TrainingDate=Date de formation
 DalayH = Durée (Heure)
 DelayD = Durée (Jours)
+Collaborator = Collaborateurs
 
 # CARD TPL
 Save=Enregistrer

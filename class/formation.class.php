@@ -8,18 +8,14 @@ class Formation extends CommonObject
 {
 
 	public $table_element='formation';
+	public $table_link_user='formation_users';
 
 	public $id;
 	public $ref;
-	public $subject;
-	public $fk_user;
 	public $fk_product;
-	public $date_d;
-	public $date_f;
-
-	/* totaux */
-	public $total_ht;
-	public $total_peda;
+	public $dated;
+	public $help;
+	public $delayh;
 
 	/**
 	 * Draft status
@@ -70,32 +66,62 @@ class Formation extends CommonObject
 
 		$this->ref = "(PROV".$this->id.")";
 
-		$request = 'INSERT INTO '.MAIN_DB_PREFIX.$this->table_element.' (rowid, ref, date_cre, date_maj, fk_product, fk_statut, dated) VALUES ('.(int)$this->id.', "'.$this->ref.'", NOW(), NOW(), '.$this->fk_product.', '.$this->status.', "'.$this->dated.'")';
+		$request = 'INSERT INTO '.MAIN_DB_PREFIX.$this->table_element.' (rowid, ref, date_cre, date_maj, fk_product, fk_statut, dated, delayh, help) VALUES ('.(int)$this->id.', "'.$this->ref.'", NOW(), NOW(), '.$this->fk_product.', '.$this->status.', "'.$this->dated.'", '.$this->delayh.', '.(float)$this->help.')';
+
 		return $this->db->query($request);
 
 	}
 
+	public function edit()
+	{
+		$request = "UPDATE ".MAIN_DB_PREFIX.$this->table_element." SET ref='".$this->ref."', fk_statut=".$this->status.", fk_product=".$this->fk_product.", dated='".$this->dated."', delayh='".$this->delayh."', help='".$this->help."', date_maj=NOW() WHERE rowid=".$this->id;
+
+
+		return $this->db->query($request);
+	}
+
 	public function set_values($value) {
 		if (is_array($value)) {
+
+			if ((isset($value['ref']) && empty($value['ref'])) || empty($value['fk_product'])) {
+				$this->errors = "Les champs obligatoire n'ont été remplis.";
+				return -1;
+			}
+
 			if (!empty($value['fk_product'])) {
 				$product = new Product($this->db);
 				$product->fetch($value['fk_product']);
 
 				$this->fk_product = $product->id;
-				if (!empty($value['dated'])) {
-					if (preg_match('#^[0-9]+/[0-9]+/[0-9]+$#', $value['dated'])) {
+			}
+			if (!empty($value['dated'])) {
+				if (preg_match('#^[0-9]+/[0-9]+/[0-9]+$#', $value['dated'])) {
 
-						$date = explode("/", $value['dated']);
-						$this->dated = $date[2]."-".$date[1]."-".$date[0];
-					}
-					else {
-						$this->dated = $value['dated'];
-					}
+					$date = explode("/", $value['dated']);
+					$this->dated = $date[2]."-".$date[1]."-".$date[0];
+				}
+				else {
+					$this->dated = $value['dated'];
 				}
 			}
-			else {
-				$this->errors = "Le champ service est obligatoire.";
+			if (!empty($value['ref'])) {
+				$this->ref = $value['ref'];
 			}
+			if (!empty($value['id'])) {
+				$this->id = $value['id'];
+			}
+
+			if (!empty($value['delayh'])) {
+				$this->delayh = $value['delayh'];
+			}
+			else {
+				$this->delayh = 0;
+			}
+
+			if (!empty($value['help'])) {
+				$this->help = $value['help'];
+			}
+
 		}
 	}
 
@@ -103,6 +129,11 @@ class Formation extends CommonObject
 		switch ($action) {
 			case 'create':
 				if ($this->create()) {
+					return 0;
+				}
+				break;
+			case 'edit':
+				if ($this->edit()) {
 					return 0;
 				}
 				break;
@@ -123,6 +154,8 @@ class Formation extends CommonObject
 		$param = [];
 		$param['fk_product'] = $this->fk_product;
 		$param['dated'] = $this->dated;
+		$param['help'] = $this->help;
+		$param['delayh'] = $this->delayh;
 
 		$newForm = new Formation($this->db);
 		$newForm->set_values($param);
@@ -136,6 +169,72 @@ class Formation extends CommonObject
 		$request = "DELETE FROM ".MAIN_DB_PREFIX.$this->table_element." WHERE rowid=".$this->id;
 
 		return $this->db->query($request);
+	}
+
+	public function addUser($user) {
+
+		$list = $this->getUsers();
+
+		while ($obj = $this->db->fetch_object($list)) {
+			if ($user->id == $obj->fk_user) {
+				$this->errors = "L'utilisateur est déjà liée à la formation.";
+				return -1;
+			}
+		}
+
+		if ($user->id != 0) {
+
+			$request = "SELECT MAX(rowid) AS rowid FROM ".MAIN_DB_PREFIX.$this->table_link_user;
+			$rowid = $this->db->query($request);
+			$rowid = $this->db->fetch_object($rowid)->rowid;
+
+			is_null($rowid) ? $rowid = 1 : $rowid = $rowid+1;
+
+			$request = 'INSERT INTO '.MAIN_DB_PREFIX.$this->table_link_user.' (rowid, fk_user, fk_formation) VALUES ('.$rowid.','.$user->id.','.$this->id.')';
+
+			if ($this->db->query($request)) {
+				return 0;
+			}
+
+			return -1;
+		}
+		else {
+			$this->errors = "Aucun collaborateur n\'a été choisi.";
+			return -1;
+		}
+	}
+
+	public function getUsers() {
+
+		$sql = " SELECT fk_user";
+		$sql.= " FROM ".MAIN_DB_PREFIX.$this->table_link_user;
+		$sql.= " WHERE fk_formation=".$this->id;
+
+		$result = $this->db->query($sql);
+
+		if($result) {
+			return $result;
+		}
+
+		return -1;
+
+	}
+
+	public function delUser($id) {
+
+		if ($id > 0) {
+
+			$request = "DELETE FROM ".MAIN_DB_PREFIX.$this->table_link_user." WHERE fk_user=".$id." AND fk_formation=".$this->id;
+
+			if ($this->db->query($request)) {
+				return 0;
+			}
+
+			return -1;
+		}
+		else {
+			setEventMessage('Aucun collaborateur n\'a été choisi !', 'errors');
+		}
 	}
 
 	/*public function save(&$PDOdb, $addprov=false)
@@ -163,7 +262,7 @@ class Formation extends CommonObject
 
 	function fetch($id)
 	{
-		$sql = " SELECT f.rowid, f.ref, f.date_cre, f.dated, f.datef, f.fk_statut, f.fk_user, f.fk_product, f.total_ht, f.total_ttc";
+		$sql = " SELECT f.rowid, f.ref, f.date_cre, f.dated, f.help, f.fk_statut, f.fk_product, f.delayh";
 		$sql.= " FROM ".MAIN_DB_PREFIX.$this->table_element." as f";
 		$sql.= " WHERE f.rowid=".$id;
 		$res = $this->db->query($sql);
@@ -175,12 +274,10 @@ class Formation extends CommonObject
 			$this->ref = $obj->ref;
 			$this->date_cre = $obj->date_cre;
 			$this->dated = $obj->dated;
-			$this->datef = $obj->datef;
 			$this->status = $obj->fk_statut;
-			$this->fk_user = $obj->fk_user;
 			$this->fk_product = $obj->fk_product;
-			$this->total_ht = $obj->total_ht;
-			$this->total_ttc = $obj->total_ttc;
+			$this->help = $obj->help;
+			$this->delayh = $obj->delayh;
 			return 1;
 		}
 		else {
@@ -266,7 +363,7 @@ class Formation extends CommonObject
 
         $result='';
         $label = '<u>' . $langs->trans("Showformation") . '</u>';
-        if (! empty($this->ref)) $label.= '<br /><b>'.$langs->trans('Ref').':</b> '."$this->ref";
+        if (! empty($this->ref)) $label.= '<br /><b>'.$langs->trans('Ref').':</b> '.$this->ref;
         if ($this->total_ht != 0) $label.= '<br /><b>'.$langs->trans('Totalht').':</b> '.$this->total_ht;
         
         $linkclose = '" title="'.dol_escape_htmltag($label, 1).'" class="classfortooltip">';

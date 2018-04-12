@@ -13,7 +13,7 @@ $action=GETPOST('action','alpha');
 $id=GETPOST('id','int');
 
 $PDOdb = new TPDOdb;
-$object = new Tformation;
+$object = new formation($db);
 
 $hookmanager->initHooks(array('formationlist'));
 
@@ -41,11 +41,11 @@ llxHeader('',$langs->trans('formationList'),'','');
 //if (empty($user->rights->formation->all->read)) $type = 'mine';
 
 // TODO ajouter les champs de son objet que l'on souhaite afficher
-/*$sql = 'SELECT t.rowid, t.ref, t.label, t.date_cre, t.date_maj, \'\' AS action';
+$sql = 'SELECT t.rowid, t.ref, t.dated, t.fk_statut';
 
 $sql.= ' FROM '.MAIN_DB_PREFIX.'formation t ';
 
-$sql.= ' WHERE 1=1';*/
+$sql.= ' WHERE 1=1';
 //$sql.= ' AND t.entity IN ('.getEntity('formation', 1).')';
 //if ($type == 'mine') $sql.= ' AND t.fk_user = '.$user->id;
 
@@ -86,17 +86,13 @@ echo $r->render($PDOdb, $sql, array(
 		'nbLine' => $nbLine
 	)
 	,'subQuery' => array()
-	,'link' => array()
+	,'link' => array(
+	)
 	,'type' => array(
 		'date_cre' => 'date' // [datetime], [hour], [money], [number], [integer]
 		,'date_maj' => 'date'
 	)
 	,'search' => array(
-		'ref' => array('recherche' => true, 'table' => 't', 'field' => 'ref')
-		,'date_cre' => array('recherche' => 'calendars', 'allow_is_null' => true)
-		,'date_maj' => array('recherche' => 'calendars', 'allow_is_null' => false)
-		,'company' => array('recherche' => true, 'table' => array('t', 't'), 'field' => array('company', 'description')) // input text de recherche sur plusieurs champs
-		,'status' => array('recherche' => TFormation::$TStatus, 'to_translate' => true) // select html, la clé = le status de l'objet, 'to_translate' à true si nécessaire
 	)
 	,'translate' => array()
 	,'hide' => array(
@@ -113,21 +109,13 @@ echo $r->render($PDOdb, $sql, array(
 	)
 	,'title'=>array(
 		'ref' => $langs->trans('Ref.')
-		,'company' => $langs->trans('Company')
-		,'date_cre' => $langs->trans('DateCre')
-		,'date_maj' => $langs->trans('DateMaj')
+		,'dated' => $langs->trans('begin')
 		,'status' => $langs->trans('Status')
 	)
 	,'eval'=>array(
 //		'fk_user' => '_getUserNomUrl(@val@)' // Si on a un fk_user dans notre requête
 	)
 ));
-
-$parameters=array('sql'=>$sql);
-$reshook=$hookmanager->executeHooks('printFieldListFooter', $parameters, $object);    // Note that $action and $object may have been modified by hook
-print $hookmanager->resPrint;
-
-$formcore->end_form();
 
 llxFooter('');
 
