@@ -4,6 +4,8 @@ require 'config.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.class.php';
+require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.product.class.php';
 dol_include_once('/formation/class/formation.class.php');
 dol_include_once('/formation/lib/formation.lib.php');
 
@@ -24,6 +26,14 @@ $object = new Formation($db);
 
 if (!empty($id)) $object->fetch($id);
 
+if ($object->fk_product_fournisseur_price) {
+	$fournPrice = new ProductFournisseur($db);
+	$fournPrice->fetch_product_fournisseur_price($object->fk_product_fournisseur_price);
+
+	$fournisseur = new Fournisseur($db);
+	$fournisseur->fetch($fournPrice->fourn_id);
+}
+
 $hookmanager->initHooks(array('formationcard', 'globalcard'));
 
 /*
@@ -42,12 +52,9 @@ if (empty($reshook))
 		case 'create':
 			if (GETPOST('create') == "newTraining") {
 				$object->set_values($_REQUEST); // Set standard attributes
-				$object->save($action);
+				$object->create();
 
-				if (!empty($object->errors)) {
-					setEventMessages($object->errors, "", 'errors');
-				}
-				else {
+				if (empty($object->errors)) {
 					header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
 					exit();
 				}
@@ -57,14 +64,10 @@ if (empty($reshook))
 
 		case 'edit':
 			if (GETPOST('edit') == "edit") {
-
 				$object->set_values($_REQUEST); // Set standard attributes
-				$object->save($action);
+				$object->save();
 
-				if (!empty($object->errors)) {
-					setEventMessages($object->errors, "", 'errors');
-				}
-				else {
+				if (empty($object->errors)) {
 					header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
 					exit();
 				}
@@ -73,15 +76,11 @@ if (empty($reshook))
 			break;
 
 		case 'addUser':
-			$addUser = new User($db);
-			$addUser->fetch(GETPOST('user'));
+			$addUser = GETPOST('user');
 
 			$object->addUser($addUser);
 
-			if (!empty($object->errors)) {
-				setEventMessages($object->errors, "", 'errors');
-			}
-			else {
+			if (empty($object->errors)) {
 				header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
 				exit();
 			}
@@ -95,9 +94,33 @@ if (empty($reshook))
 			exit;
 			break;
 
+		case 'addFournPrice':
+			$object->addFournPrice(GETPOST('fourn_price_id'));
+
+			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
+			exit;
+			break;
+
+		case 'editFournPrice':
+			if (GETPOST('fourn_price_id')) {
+				$object->deleteFournPrice($object->id);
+				$object->addFournPrice(GETPOST('fourn_price_id'));
+			}
+
+			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
+			exit;
+			break;
+
+		case 'delFournPrice':
+			$object->deleteFournPrice($object->id);
+
+			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
+			exit;
+			break;
+
 		case 'confirm_clone':
 			if (!empty($user->rights->formation->write)) $clone = $object->clone();
-			
+
 			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$clone->id);
 			exit;
 			break;
@@ -116,8 +139,10 @@ if (empty($reshook))
 		case 'confirm_prediction':
 			if (!empty($user->rights->formation->write)) $object->setPredict();
 
-			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
-			exit;
+			if (empty($object->errors)) {
+				header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
+				exit();
+			}
 			break;
 
 		case 'confirm_finish':
@@ -132,17 +157,15 @@ if (empty($reshook))
 
 			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
 			break;
-		// link from llx_element_element
-		case 'dellink':
-			$object->generic->deleteObjectLinked(null, '', null, '', GETPOST('dellinkid'));
-			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
-			exit;
-			break;
 
-		case 'edituser':
-			setEventMessages('Edit de l\'utilisateur');
+		case 'confirm_unpredict':
+			if (!empty($user->rights->formation->write)) $object->setValid();
+
+			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
 			break;
 	}
+
+	$object->displayErrors();
 }
 				
 /**
@@ -189,11 +212,11 @@ if ($id > 0) {
 
 		print '<tr><td class="titlefieldcreate">' . $langs->trans('DalayH') . '</td><td><input type=text name="delayh" value='.$object->delayh.'></td></tr>';
 
-		print '<tr><td class="titlefieldcreate">' . $langs->trans('Help') . '</td><td><input type=text name="help" value='.number_format($object->help, 2, ',', '').'></td></tr>';
+		print '<tr><td class="titlefieldcreate">' . $langs->trans('Help') . '</td><td><input type=text name="help" value='.$object->help.'></td></tr>';
 
 		// Date
 		print '<tr><td>' . $langs->trans('DateTraining') . '</td><td>';
-		$form->select_date($object->dated, 'dated', '', '', '', "addprop", 1, 1);
+		$form->select_date(explode('/', $object->dated)[2]."-".explode('/', $object->dated)[1]."-".explode('/', $object->dated)[0], 'dated', '', '', '', "addprop", 1, 1);
 		print '</td></tr>';
 		print "</table>";
 
@@ -243,11 +266,11 @@ if ($id > 0) {
 
 	    print '<tr><td class="titlefield">'.$langs->trans('DalayH');
 	    print '</td>';
-	    print '<td colspan="2">'.$object->delayh.' heure(s)</td></tr>';
+	    print '<td colspan="2">'.$object->delayh.' '.$langs->trans('Hours').'</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('DelayD');
 	    print '</td>';
-	    print '<td colspan="2">'.($object->delayh/5).' jour(s)</td></tr>';
+	    print '<td colspan="2">'.($object->delayh/5).' '.$langs->trans('Days').'</td></tr>';
 
 	    print '</table>';
 
@@ -259,23 +282,82 @@ if ($id > 0) {
 	    print '<table class="border tableforfield" width="100%">';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('PriceP').'</td>';
-	    print '<td colspan="2">0 €</td></tr>';
+	    print '<td colspan="2">'.number_format(($fournPrice->fourn_unitprice*$object->delayh), 2, ',', '').' €</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('PriceS').'</td>';
-	    print '<td colspan="2">0 €</td></tr>';
+	    print '<td colspan="2">'.number_format(0, 2, ',', '').' €</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('PriceT').'</td>';
-	    print '<td colspan="2">0 €</td></tr>';
+	    print '<td colspan="2">'.number_format((($fournPrice->fourn_unitprice*$object->delayh)+0), 2, ',', '').' €</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('Help');
 	    print '</td><td colspan="2">'.number_format($object->help, 2, ',', '').' €</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('InCharge').'</td>';
-	    print '<td colspan="2">'.($product->price-$object->help).' €</td></tr>';
+	    print '<td colspan="2">'.number_format(((($fournPrice->fourn_unitprice*$object->delayh)+0)-$object->help), 2, ',', '').' €</td></tr>';
 
 	    print '</table>';
 
 	    print '</div></div>';
+
+	    print '<div class="clearboth"></div><br />';
+
+	    /* Supplier Price */
+
+	    print '<div class="div-table-responsive">';
+	    print '<table id="tablelines" class="noborder noshadow" width="100%"><tbody>';
+	    print '<form action="' . $_SERVER["PHP_SELF"] . '?id='.$object->id.'" method="POST">';
+
+	    if ($object->fk_product_fournisseur_price) {
+
+	    	if ($object->status <= $object::STATUS_VALIDATED) {
+
+			    print '<input type="hidden" name="action" value="editFournPrice">';
+			    print '<tr class="liste_titre nodrag nodrop">';
+			    print '<td class="linecoldescription">'.$langs->trans('EditSupplier').'</td>';
+				print '<td class="linecoldescription">'.$form->select_produits_fournisseurs_list(0, "", "fourn_price_id", "", "", $product->ref).'</td>';
+			    print '<td class="linecoldescription"><input type="submit" class="button" value="' . $langs->trans("Modify") . '"></td>';
+			    print '<td class="linecoldescription"></td>';
+			    print '</tr>';
+
+			}
+
+		    print '<tr class="liste_titre nodrag nodrop">';
+		    print '<td class="linecoldescription">'.$langs->trans('Supplier').'</td>';
+		    print '<td class="linecoldescription">'.$langs->trans('TVA').'</td>';
+		    print '<td class="linecoldescription">'.$langs->trans('UnitPrice').'</td>';
+		    print '<td class="linecoldescription"></td>';
+			print '</tr>';
+			print '</form>';
+
+			print '<td class="linecoldescription">'.$fournisseur->getNomUrl(1).'</td>';
+			print '<td class="linecoldescription">'.number_format($fournPrice->fourn_tva_tx, 2, ',', '').'</td>';
+			print '<td class="linecoldescription">'.number_format($fournPrice->fourn_unitprice, 2, ',', '').'</td>';
+			print '<td class="linecoldescription"><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delFournPrice"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td>';
+
+		}
+
+	    else {
+
+		    print '<input type="hidden" name="action" value="addFournPrice">';
+		    print '<tr class="liste_titre nodrag nodrop">';
+		    print '<td class="linecoldescription">'.$langs->trans('AddSupplier').'</td>';
+		    $fournisseur = $form->select_produits_fournisseurs_list(0, "", "fourn_price_id", "", "", $product->ref);
+			print '<td class="linecoldescription">'.$fournisseur."</td>";
+		    print '<td class="linecoldescription" colspan="2"><input type="submit" class="button" value="' . $langs->trans("Add") . '"></td>';
+			print '</tr>';
+			print '</form>';
+
+			print '<td class="linecoldescription">'.$langs->trans('NoSupplier').'</td>';
+			
+		}
+
+		print '</tr>';
+		print '</tbody></table>';
+	    print '</div>';
+		
+		/* End */
+
 
 	    print '<div class="clearboth"></div>';
 
@@ -293,6 +375,7 @@ if ($id > 0) {
 
 	    	case $object::STATUS_PREDICTION:
 	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=finish">'.$langs->trans('Finish').'</a></div>';
+	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=unprediction">'.$langs->trans('UnPrediction').'</a></div>';
 	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=cancel">'.$langs->trans('Cancel').'</a></div>';
 	    		break;
 
@@ -311,7 +394,7 @@ if ($id > 0) {
 
 	    print '</div>';
 
-		print '<div class="fichecenter"><div class="fichehalfleft"><div class="ficheaddleft">';
+		print '<div class="fichecenter"><div class="fichehalfleft">';
 
 		print '<form action="' . $_SERVER["PHP_SELF"] . '?id='.$object->id.'" method="POST"><table class="centpercent notopnoleftnoright">';
 		print '<input type="hidden" name="action" value="addUser">';
@@ -328,70 +411,67 @@ if ($id > 0) {
 		print '<table class="noborder listactions" width="100%"><tbody>';
 		print '<tr class="liste_titre"><th class="liste_titre">Utilisateur</th><th class="liste_titre">Poste</th><th></th></tr>';
 
-		$result = $object->getUsers();
+		$users = $object->getUsers();
 
-		while ($obj = $db->fetch_object($result)) {
-			$participante = new User($db);
-			$participante->fetch($obj->fk_user);
+		if ($users != -1) {
 
-			print '<tr class="oddeven"><td>'.$participante->getNomUrl(1).'</td>';	
-			print '<td>'.$participante->job.'</td>';	
-			print '<td><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delUser&user='.$participante->id.'"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Éditer" style="float: right" class="pictodelete"></a></td></tr>';
+			foreach ($users as $user) {
+
+				$participante = new User($db);
+				$participante->fetch($user['fk_user']);
+
+				print '<tr class="oddeven"><td>'.$participante->getNomUrl(1).'</td>';	
+				print '<td>'.$participante->job.'</td>';	
+				print '<td><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delUser&user='.$participante->id.'"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td></tr>';
+			}
+		}
+
+		else {
+			$object->displayErrors();
 		}
 		
 		print '</tbody></table>';
 		print '</div>';
 
-		print '</div></div></div>';	
+		print '</div></div>';	
 
 	    print '<div class="clearboth"></div></div>';
 
 	    switch ($action) {
-
 			case "valid":
 				$newref = $object->getNumero();
 
 				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ValidateTraining'), $langs->trans('ConfirmValidate')." ".$newref, 'confirm_valid', '', 0, 1);
 				print $formconfirm;
-
 				break;
-
 			case "clone":
 				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('CloneTraining'), $langs->trans('ConfirmClone')." ".$object->ref, 'confirm_clone', '', 0, 1);
 				print $formconfirm;
-
 				break;
-
 			case "del":
 				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('DeletreTraining'), $langs->trans('ConfirmDelete')." ".$object->ref, 'confirm_delete', '', 0, 1);
 				print $formconfirm;
-
 				break;
-
 			case "prediction":
 				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('PredictTraining'), $langs->trans('ConfirmPrediction')." ".$object->ref, 'confirm_prediction', '', 0, 1);
 				print $formconfirm;
-
 				break;
-
 			case "finish":
 				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('FinishTraining'), $langs->trans('ConfirmFinish')." ".$object->ref, 'confirm_finish', '', 0, 1);
 				print $formconfirm;
-
 				break;
-
 			case "cancel":
 				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('CancelTraining'), $langs->trans('ConfirmCancel')." ".$object->ref, 'confirm_cancel', '', 0, 1);
 				print $formconfirm;
-
 				break;
-
 			case "reopen":
 				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ReopenTraining'), $langs->trans('ConfirmReopen')." ".$object->ref, 'confirm_prediction', '', 0, 1);
 				print $formconfirm;
-
 				break;
-
+			case 'unprediction':
+				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('UnPredictTraining'), $langs->trans('ConfirmUnpredict')." ".$object->ref, 'confirm_unpredict', '', 0, 1);
+				print $formconfirm;
+				break;
 		}
 
 	}
@@ -408,9 +488,11 @@ else {
 		print '<form name="addprop" action="' . $_SERVER["PHP_SELF"] . '" method="POST">';
 		print '<input type="hidden" name="action" value="create">';
 		print '<input type="hidden" name="create" value="newTraining">';
+		print '<input type="hidden" name="ref" value="">';
 		print '<table class="border" width="100%">';
 		// Ref new object
 		print '<tr><td class="titlefieldcreate fieldrequired">' . $langs->trans('Ref') . '</td><td>' . $langs->trans("Draft") . '</td></tr>';
+
 		// Ref training product
 		print '<tr><td class="titlefieldcreate fieldrequired">' . $langs->trans('RefTraining') . '</td><td>';
 		print $form->select_produits('', 'fk_product', 1,20, 0, 1, 2, '', 1);

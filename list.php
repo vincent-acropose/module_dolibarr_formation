@@ -10,7 +10,6 @@ $langs->load('abricot@abricot');
 $langs->load('formation@formation');
 
 $action=GETPOST('action','alpha');
-$id=GETPOST('id','int');
 
 $PDOdb = new TPDOdb;
 $object = new formation($db);
@@ -42,42 +41,10 @@ llxHeader('',$langs->trans('formationList'),'','');
 
 // TODO ajouter les champs de son objet que l'on souhaite afficher
 $sql = 'SELECT t.rowid, t.ref, t.dated, t.fk_statut';
-
 $sql.= ' FROM '.MAIN_DB_PREFIX.'formation t ';
 
-$sql.= ' WHERE 1=1';
 //$sql.= ' AND t.entity IN ('.getEntity('formation', 1).')';
 //if ($type == 'mine') $sql.= ' AND t.fk_user = '.$user->id;
-
-if ($id > 0) {
-
-	$user = new User($db);
-	$user->fetch($id, '', '', 1);
-	$user->getrights();
-	$user->fetch_clicktodial();
-
-	$head = user_prepare_head($user);
-
-	$title = $langs->trans("User");
-
-	dol_fiche_head($head, 'formation', $title, -1, 'user');
-
-	$linkback = '';
-
-	if ($user->rights->user->user->lire || $user->admin) {
-		$linkback = '<a href="'.DOL_URL_ROOT.'/user/index.php">'.$langs->trans("BackToList").'</a>';
-	}
-
-	dol_banner_tab($user,'id',$linkback,$user->rights->user->user->lire || $user->admin);
-
-	$formcore = new TFormCore($_SERVER['PHP_SELF'], 'form_list_douchette', 'GET');
-
-	$nbLine = !empty($user->conf->MAIN_SIZE_LISTE_LIMIT) ? $user->conf->MAIN_SIZE_LISTE_LIMIT : $conf->global->MAIN_SIZE_LISTE_LIMIT;
-
-	dol_fiche_end();
-
-    $formationslist = $object->listFormationForUser($user->id);
-}
 
 $r = new TListviewTBS('formation');
 echo $r->render($PDOdb, $sql, array(
@@ -89,8 +56,7 @@ echo $r->render($PDOdb, $sql, array(
 	,'link' => array(
 	)
 	,'type' => array(
-		'date_cre' => 'date' // [datetime], [hour], [money], [number], [integer]
-		,'date_maj' => 'date'
+		'dated' => 'date' // [datetime], [hour], [money], [number], [integer]
 	)
 	,'search' => array(
 	)
@@ -110,10 +76,11 @@ echo $r->render($PDOdb, $sql, array(
 	,'title'=>array(
 		'ref' => $langs->trans('Ref.')
 		,'dated' => $langs->trans('begin')
-		,'status' => $langs->trans('Status')
+		,'fk_statut' => $langs->trans('Status')
 	)
 	,'eval'=>array(
-//		'fk_user' => '_getUserNomUrl(@val@)' // Si on a un fk_user dans notre requête
+		'ref' => '_getFormationNomUrl(@val@)'
+		,'fk_statut' => '_getStatus(@val@)'
 	)
 ));
 
@@ -124,15 +91,27 @@ $db->close();
 /**
  * TODO remove if unused
  */
-function _getUserNomUrl($fk_user)
+function _getFormationNomUrl($rowid)
 {
 	global $db;
 	
-	$u = new User($db);
-	if ($u->fetch($fk_user) > 0)
-	{
-		return $u->getNomUrl(1);
+	$f = new Formation($db);
+
+	if (preg_match('#^PROV#', $rowid)) {
+		$rowid = explode("V", $rowid)[1];
 	}
-	
-	return '';
+	elseif ($rowid<0) {
+		$rowid = $rowid*-1;
+	}
+
+	$f->fetch($rowid);
+	return $f->getNomUrl(1);
+
+}
+
+function _getStatus($statut)
+{
+	global $db;
+
+	return Formation::LibStatut($statut, 0);
 }

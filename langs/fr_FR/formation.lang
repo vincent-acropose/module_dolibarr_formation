@@ -41,6 +41,7 @@ TrainingPrediction=Formations prévisionnelles
 formationList=Liste des formations
 Noformation=(vide)
 begin=Date de Début
+status=Etat
 
 # CARD
 Newformation=Création formation
@@ -70,11 +71,17 @@ Modify=Modifier
 Reopen=Rouvrir
 ToClone=Cloner
 Delete=Supprimer
+UnPrediction=Ne plus prévoir
 
 # FORM LIST
 DateCre=Date Début
 DateMaj=Date Fin
 ListOfTraining=Liste des formations pour cette utilisateur
+
+# Supplier Price
+NoSupplier=Aucun fournisseur
+EditSupplier=Modifier le fournisseur
+AddSupplier=Ajouter un fournisseur
 
 # CONFIRM
 ValidateTraining=Valider la Formation
@@ -91,3 +98,5 @@ CancelTraining=Annuler la formation
 ConfirmCancel=Etes-vous sur de vouloir annuler la formation
 ReopenTraining=Re-ouvrir la formation
 ConfirmReopen=Etes-vous sur de vouloir re-ouvrir la formation
+UnPredictTraining=De-programmer la formation
+ConfirmUnpredict=Etes-vous sur de vouloir de-programmer la formation

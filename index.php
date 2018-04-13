@@ -71,7 +71,7 @@ while ($obj = $db->fetch_object($result)) {
 
 	print '<tr class="oddeven">';
 	print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
-	print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).'</a></td>';
+	print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.$product->label.'</a></td>';
 	print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
 	print '</tr>';
 
@@ -95,11 +95,11 @@ print '<tr class="liste_titre"><th colspan="4">'.$langs->trans("TrainingOpen").(
 while ($obj = $db->fetch_object($result)) {
 
 	$object->fetch($obj->rowid);
-	$product->fetch($obj->fk_product);
+	$obj->fk_product != null ? $product->fetch($obj->fk_product) : $product = new Product($db);
 
 	print '<tr class="oddeven">';
 	print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
-	print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).'</a></td>';
+	print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.$product->label.'</a></td>';
 	print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
 	print '</tr>';
 
@@ -125,7 +125,7 @@ while ($obj = $db->fetch_object($result)) {
 
 	print '<tr class="oddeven">';
 	print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
-	print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).'</a></td>';
+	print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.$product->label.'</a></td>';
 	print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
 	print '</tr>';
 

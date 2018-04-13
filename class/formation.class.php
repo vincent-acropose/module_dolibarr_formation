@@ -15,29 +15,17 @@ class Formation extends CommonObject
 	public $fk_product;
 	public $dated;
 	public $help;
-	public $delayh;
+	public $delayh = 0;
+	public $fk_product_fournisseur_price;
 
-	/**
-	 * Draft status
-	 */
+	// Statut
 	const STATUS_DRAFT = 0;
-	/**
-	 * Validated status
-	 */
 	const STATUS_VALIDATED = 1;
-	/**
-	 * Ongoing status
-	 */
 	const STATUS_PREDICTION = 2;
-	/**
-	 * Finish status
-	 */
 	const STATUS_FINISH = 3;
-	/**
-	 * Cancel status
-	 */
 	const STATUS_CANCEL = 4;
 	
+	// Statut Array
 	public static $TStatus = array(
 		self::STATUS_DRAFT => 'Draft'
 		,self::STATUS_VALIDATED => 'Validate'
@@ -55,285 +43,23 @@ class Formation extends CommonObject
 		$this->status = self::STATUS_DRAFT;
 	}
 
-	public function create()
-	{
-
-		$request = "SELECT MAX(rowid) AS rowid FROM ".MAIN_DB_PREFIX.$this->table_element;
-		$rowid = $this->db->query($request);
-		$rowid = $this->db->fetch_object($rowid)->rowid;
-
-		is_null($rowid) ? $this->id = 1 : $this->id = $rowid+1;
-
-		$this->ref = "(PROV".$this->id.")";
-
-		$request = 'INSERT INTO '.MAIN_DB_PREFIX.$this->table_element.' (rowid, ref, date_cre, date_maj, fk_product, fk_statut, dated, delayh, help) VALUES ('.(int)$this->id.', "'.$this->ref.'", NOW(), NOW(), '.$this->fk_product.', '.$this->status.', "'.$this->dated.'", '.$this->delayh.', '.(float)$this->help.')';
-
-		return $this->db->query($request);
-
-	}
-
-	public function edit()
-	{
-		$request = "UPDATE ".MAIN_DB_PREFIX.$this->table_element." SET ref='".$this->ref."', fk_statut=".$this->status.", fk_product=".$this->fk_product.", dated='".$this->dated."', delayh='".$this->delayh."', help='".$this->help."', date_maj=NOW() WHERE rowid=".$this->id;
-
-
-		return $this->db->query($request);
-	}
-
-	public function set_values($value) {
-		if (is_array($value)) {
-
-			if ((isset($value['ref']) && empty($value['ref'])) || empty($value['fk_product'])) {
-				$this->errors = "Les champs obligatoire n'ont été remplis.";
-				return -1;
-			}
-
-			if (!empty($value['fk_product'])) {
-				$product = new Product($this->db);
-				$product->fetch($value['fk_product']);
-
-				$this->fk_product = $product->id;
-			}
-			if (!empty($value['dated'])) {
-				if (preg_match('#^[0-9]+/[0-9]+/[0-9]+$#', $value['dated'])) {
-
-					$date = explode("/", $value['dated']);
-					$this->dated = $date[2]."-".$date[1]."-".$date[0];
-				}
-				else {
-					$this->dated = $value['dated'];
-				}
-			}
-			if (!empty($value['ref'])) {
-				$this->ref = $value['ref'];
-			}
-			if (!empty($value['id'])) {
-				$this->id = $value['id'];
-			}
-
-			if (!empty($value['delayh'])) {
-				$this->delayh = $value['delayh'];
-			}
-			else {
-				$this->delayh = 0;
-			}
-
-			if (!empty($value['help'])) {
-				$this->help = $value['help'];
-			}
-
-		}
-	}
-
-	public function save($action) {
-		switch ($action) {
-			case 'create':
-				if ($this->create()) {
-					return 0;
-				}
-				break;
-			case 'edit':
-				if ($this->edit()) {
-					return 0;
-				}
-				break;
-			case 'modifyStatus':
-				$request = "UPDATE ".MAIN_DB_PREFIX.$this->table_element." SET ref='".$this->ref."', fk_statut=".$this->status.", date_maj=NOW() WHERE rowid=".$this->id;
-
-				if ($this->db->query($request)) {
-					return 0;
-				}
-				break;
-
-		return -1;
-
-		}
-	}
-
-	public function clone() {
-		$param = [];
-		$param['fk_product'] = $this->fk_product;
-		$param['dated'] = $this->dated;
-		$param['help'] = $this->help;
-		$param['delayh'] = $this->delayh;
-
-		$newForm = new Formation($this->db);
-		$newForm->set_values($param);
-
-		$newForm->save("create");
-
-		return $newForm;
-	}
-
-	public function delete() {
-		$request = "DELETE FROM ".MAIN_DB_PREFIX.$this->table_element." WHERE rowid=".$this->id;
-
-		return $this->db->query($request);
-	}
-
-	public function addUser($user) {
-
-		$list = $this->getUsers();
-
-		while ($obj = $this->db->fetch_object($list)) {
-			if ($user->id == $obj->fk_user) {
-				$this->errors = "L'utilisateur est déjà liée à la formation.";
-				return -1;
-			}
-		}
-
-		if ($user->id != 0) {
-
-			$request = "SELECT MAX(rowid) AS rowid FROM ".MAIN_DB_PREFIX.$this->table_link_user;
-			$rowid = $this->db->query($request);
-			$rowid = $this->db->fetch_object($rowid)->rowid;
-
-			is_null($rowid) ? $rowid = 1 : $rowid = $rowid+1;
-
-			$request = 'INSERT INTO '.MAIN_DB_PREFIX.$this->table_link_user.' (rowid, fk_user, fk_formation) VALUES ('.$rowid.','.$user->id.','.$this->id.')';
-
-			if ($this->db->query($request)) {
-				return 0;
-			}
-
-			return -1;
-		}
-		else {
-			$this->errors = "Aucun collaborateur n\'a été choisi.";
-			return -1;
-		}
-	}
+	/* ----------------------------- */
+	/* ---------- GETTERS ---------- */
+	/* ----------------------------- */
 
 	public function getUsers() {
 
-		$sql = " SELECT fk_user";
-		$sql.= " FROM ".MAIN_DB_PREFIX.$this->table_link_user;
-		$sql.= " WHERE fk_formation=".$this->id;
+		$users = $this->request("SELECT fk_user FROM ".MAIN_DB_PREFIX.$this->table_link_user." WHERE fk_formation=".$this->id,0,"*");
 
-		$result = $this->db->query($sql);
-
-		if($result) {
-			return $result;
+		if($users != -1) {
+			return $users;
 		}
-
+		else {
+			$this->errors = "Une erreur est survenu lors de la récupération des collaborateurs";
+			return -1;
+		}
 		return -1;
 
-	}
-
-	public function delUser($id) {
-
-		if ($id > 0) {
-
-			$request = "DELETE FROM ".MAIN_DB_PREFIX.$this->table_link_user." WHERE fk_user=".$id." AND fk_formation=".$this->id;
-
-			if ($this->db->query($request)) {
-				return 0;
-			}
-
-			return -1;
-		}
-		else {
-			setEventMessage('Aucun collaborateur n\'a été choisi !', 'errors');
-		}
-	}
-
-	/*public function save(&$PDOdb, $addprov=false)
-	{
-		global $user;
-		
-		if (!$this->getId()) $this->fk_user_author = $user->id;
-		parent::set_table(MAIN_DB_PREFIX."formations");
-		$res = parent::save($PDOdb);
-		
-		if ($addprov || !empty($this->is_clone))
-		{
-			$this->ref = '(PROV'.$this->getId().')';
-			
-			if (!empty($this->is_clone)) $this->status = self::STATUS_DRAFT;
-			
-			$wc = $this->withChild;
-			$this->withChild = false;
-			$res = parent::save($PDOdb);
-			$this->withChild = $wc;
-		}
-		
-		return $res;
-	}*/
-
-	function fetch($id)
-	{
-		$sql = " SELECT f.rowid, f.ref, f.date_cre, f.dated, f.help, f.fk_statut, f.fk_product, f.delayh";
-		$sql.= " FROM ".MAIN_DB_PREFIX.$this->table_element." as f";
-		$sql.= " WHERE f.rowid=".$id;
-		$res = $this->db->query($sql);
-
-		if ($res) {
-			$obj = $this->db->fetch_object($res);
-
-			$this->id = $obj->rowid;
-			$this->ref = $obj->ref;
-			$this->date_cre = $obj->date_cre;
-			$this->dated = $obj->dated;
-			$this->status = $obj->fk_statut;
-			$this->fk_product = $obj->fk_product;
-			$this->help = $obj->help;
-			$this->delayh = $obj->delayh;
-			return 1;
-		}
-		else {
-			return -1;
-		}
-	}
-	
-	/*public function delete(&$PDOdb)
-	{
-		$this->generic->deleteObjectLinked();
-		
-		parent::delete($PDOdb);
-	}*/
-	
-	/*public function fetchObjectLinked()
-	{
-		$this->generic->fetchObjectLinked($this->getId());
-	}*/
-
-	public function setDraft()
-	{
-		if ($this->status == self::STATUS_VALIDATED)
-		{
-			$this->status = self::STATUS_DRAFT;
-			return $this->save();
-		}
-		
-		return 0;
-	}
-	
-	public function setValid()
-	{
-//		global $user;
-		
-		$this->ref = $this->getNumero();
-		$this->status = self::STATUS_VALIDATED;
-
-		return $this->save("modifyStatus");
-	}
-
-	public function setPredict() {
-		$this->status = self::STATUS_PREDICTION;
-
-		return $this->save("modifyStatus");
-	}
-
-	public function setFinish() {
-		$this->status = self::STATUS_FINISH;
-
-		return $this->save("modifyStatus");
-	}
-
-	public function setCancel() {
-		$this->status = self::STATUS_CANCEL;
-
-		return $this->save("modifyStatus");
 	}
 	
 	public function getNumero()
@@ -345,7 +71,7 @@ class Formation extends CommonObject
 		
 		return $this->ref;
 	}
-	
+
 	private function getNextNumero()
 	{
 	
@@ -356,6 +82,11 @@ class Formation extends CommonObject
 		
 		return $numero;
 	}
+
+	public function getLibStatut($mode=0)
+    {
+        return self::LibStatut($this->status, $mode);
+    }
 	
 	public function getNomUrl($withpicto=0, $get_params='')
 	{
@@ -381,45 +112,342 @@ class Formation extends CommonObject
         return $result;
 	}
 
-	public function listFormationForUser($idUser) {
+	/* ----------------------------- */
+	/* ---------- SETTERS ---------- */
+	/* ----------------------------- */
 
-		$sql = "SELECT f.rowid";
-		$sql.= " FROM ".MAIN_DB_PREFIX.$this->table_element." as f";
-		$sql.= " WHERE f.fk_user=".$idUser;
+	public function setNextId() {
+		$id = $this->request("SELECT MAX(rowid) AS rowid FROM ".MAIN_DB_PREFIX.$this->table_element);
+		$id != -1 ? $id = $id->rowid : $this->errors = "Une erreur est survenu lors de la création de la formation: Impossible de récupérer le bon ID";
 
-		$result = $this->db->query($sql);
-		if ($result) {
-			while ($obj = $this->db->fetch_object($result)) {
-				$newFormation=new Formation($this->db);
-				$newFormation->fetch($obj->rowid);
-				$ret[$obj->rowid]=$newFormation;
+		is_null($id) ? $this->id = 1 : $this->id = $id+1;
+	}
+
+	public function set_values($value) {
+		if (is_array($value)) {
+
+			if (empty($value['fk_product'])) {
+				$this->errors = "Les champs obligatoire n'ont été remplis.";
+				return -1;
 			}
 
-			return $ret;
+			if (!empty($value['fk_product'])) {
+				$this->fk_product = $value['fk_product'];
+			}
+
+			if (!empty($value['dated'])) {
+				/*if (preg_match('#^[0-9]+/[0-9]+/[0-9]+$#', $value['dated'])) {
+					$date = explode("/", $value['dated']);
+					$this->dated = $date[2]."-".$date[1]."-".$date[0];
+				}*/
+				$this->dated = $value['datedyear']."-".$value['datedmonth']."-".$value['datedday'];
+			}
+
+			if (!empty($value['ref'])) {
+				$this->ref = $value['ref'];
+			}
+			if (!empty($value['id'])) {
+				$this->id = $value['id'];
+			}
+
+			if (!empty($value['delayh'])) {
+				$this->delayh = $value['delayh'];
+			}
+
+			if (!empty($value['help'])) {
+				$this->help = $value['help'];
+			}
+
+			if (!empty($value['fk_product_fournisseur_price'])) {
+				$this->fk_product_fournisseur_price = $value['fk_product_fournisseur_price'];
+			}
+
+		}
+	}
+
+	public function setDraft()
+	{
+		if ($this->status == self::STATUS_VALIDATED)
+		{
+			$this->status = self::STATUS_DRAFT;
+			return $this->save();
+		}
+		
+		return 0;
+	}
+	
+	public function setValid()
+	{
+		if ($this->status == self::STATUS_DRAFT) {
+			$this->ref = $this->getNumero();
+		}
+		$this->status = self::STATUS_VALIDATED;
+
+		return $this->save();
+	}
+
+	public function setPredict() {
+		if ($this->fk_product_fournisseur_price > 0) {
+			$this->status = self::STATUS_PREDICTION;
+		}
+		else {
+			$this->errors = "Une erreur est survenu lors de la prévision de la fromation: Aucun tarif n'a été défini";
 		}
 
+		return $this->save();
+	}
+
+	public function setFinish() {
+		$this->status = self::STATUS_FINISH;
+
+		return $this->save();
+	}
+
+	public function setCancel() {
+		$this->status = self::STATUS_CANCEL;
+
+		return $this->save();
+	}
+
+	/* ----------------------------- */
+	/* ------------ CRUD ----------- */
+	/* ----------------------------- */
+
+
+	public function create()
+	{
+		$this->setNextId();
+
+		$this->ref = "(PROV".$this->id.")";
+
+		$trainingCreate = $this->request('INSERT INTO '.MAIN_DB_PREFIX.$this->table_element.' (rowid, ref, date_cre, date_maj, fk_product, fk_statut, dated, delayh, help) VALUES ('.(int)$this->id.', "'.$this->ref.'", NOW(), NOW(), '.$this->fk_product.', '.$this->status.', "'.$this->dated.'", '.$this->delayh.', '.(float)$this->help.')', 1);
+
+		if ($trainingCreate) {
+			return 0;
+		}
 		else {
+			$this->errors = "Une erreur est survenu lors de la création de la fromation.";
 			return -1;
 		}
 
 	}
-	
-	/*public static function getStaticNomUrl($id, $withpicto=0)
+
+	public function clone() {
+		$param = [];
+		$param['fk_product'] = $this->fk_product;
+		$param['dated'] = $this->dated;
+		$param['help'] = $this->help;
+		$param['delayh'] = $this->delayh;
+
+		$newForm = new Formation($this->db);
+		$newForm->set_values($param);
+
+		$newForm->save("create");
+
+		return $newForm;
+	}
+
+	public function delete() {
+		$trainingDelete = $this->request("DELETE FROM ".MAIN_DB_PREFIX.$this->table_element." WHERE rowid=".$this->id, 1);
+
+		return $trainingDelete;
+	}
+
+	public function addUser($userId) {
+
+		$users = $this->getUsers();
+
+		foreach ($users as $user) {
+
+			if ($user['fk_user'] == $userId) {
+				$this->errors = "Une erreur est survenu lors de l'ajout d'un collaborateur: L'utilisateur est déjà liée à la formation.";
+				return -1;
+			}
+		}
+
+		if ($userId != 0) {
+
+			$id = $this->request("SELECT MAX(rowid) AS rowid FROM ".MAIN_DB_PREFIX.$this->table_link_user);
+			$id != -1 ? $id = $id->rowid : $this->errors = "Une erreur est survenu lors de l'ajout d'un collaborateur: Impossible de récupérer le bon ID";
+
+			is_null($id) ? $rowid = 1 : $rowid = $id+1;
+
+			$addUser = $this->request('INSERT INTO '.MAIN_DB_PREFIX.$this->table_link_user.' (rowid, fk_user, fk_formation) VALUES ('.$rowid.','.$userId.','.$this->id.')',1);
+
+			if ($addUser) {
+				return 0;
+			}
+			else {
+				$this->errors = "Une erreur est survenu lors de l'ajout d'un collaborateur";
+				return -1;
+			}
+		}
+		else {
+			$this->errors = "Une erreur est survenu lors de l'ajout d'un collaborateur: Aucun collaborateur n\'a été choisi.";
+			return -1;
+		}
+	}
+
+	public function delUser($id) {
+
+		if ($id > 0) {
+
+			$delUser = $this->request("DELETE FROM ".MAIN_DB_PREFIX.$this->table_link_user." WHERE fk_user=".$id." AND fk_formation=".$this->id, 1);
+
+			if ($this->db->query($delUser)) {
+				return 0;
+			}
+
+			else {
+				$this->errors = 'Une erreur est survenu lors de l\'ajout d\'un collaborateur';
+				return -1;
+			}
+		}
+		else {
+			$this->errors = 'Aucun collaborateur n\'a été choisi !';
+			return -1;
+		}
+	}
+
+	public function addFournPrice($id) {
+
+		if ($id) {
+			$request = $this->request("UPDATE ".MAIN_DB_PREFIX.$this->table_element." SET fk_product_fournisseur_price=".$id.", date_maj=NOW() WHERE rowid=".$this->id, 1);
+
+			if ($request) {
+				return 0;
+			}
+			else {
+				$this->errors = 'Une erreur est survenu lors de l\'ajout d\'un prix fournisseur';
+				return -1;
+			}
+		}
+		else {
+			$this->errors = 'Une erreur est survenu lors de l\'ajout d\'un prix fournisseur: Aucun prix choisi';
+			return -1;
+		}
+
+	}
+
+	public function deleteFournPrice($id) {
+
+		if ($id) {
+			$request = $this->request("UPDATE ".MAIN_DB_PREFIX.$this->table_element." SET fk_product_fournisseur_price=NULL, date_maj=NOW() WHERE rowid=".$this->id, 1);
+
+			if ($request) {
+				return 0;
+			}
+			else {
+				$this->errors = 'Une erreur est survenu lors de la suppression d\'un prix fournisseur';
+				return -1;
+			}
+		}
+		else {
+			$this->errors = 'Une erreur est survenu lors de la suppression d\'un prix fournisseur: Aucun fournisseur choisi';
+			return -1;
+		}
+
+	}
+
+	public function save() {
+
+		$sql = "UPDATE ".MAIN_DB_PREFIX.$this->table_element;
+		$sql .=" SET ref='".$this->ref."'";
+		$sql .= ", fk_statut=".$this->status;
+		$sql .= ", dated='".$this->dated."'";
+		$sql .= ", help=".$this->help;
+		$sql .= ", delayh=".$this->delayh;
+		$sql .= ", fk_product=".$this->fk_product;
+		if ($this->fk_product_fournisseur_price) $sql .= ", fk_product_fournisseur_price=".$this->fk_product_fournisseur_price;
+		$sql .= ", date_maj=NOW() WHERE rowid=".$this->id;
+
+		$request = $this->request($sql, 1);
+
+		if ($request) {
+			return 0;
+		}
+		else {
+			$this->errors = "Une erreur est survenue lors de la sauvegarde";
+			return -1;
+		}
+	}
+
+	/* ----------------------------- */
+	/* ---------- METHODS ---------- */
+	/* ----------------------------- */
+
+	/**
+	 * function request 
+	 * 		$request => Requête à effectué sur la base de donnée
+	 * 		$type => 0:(SELECT), 1:(INSERT, UPDATE, DELETE)
+	 */
+	public function request($request, $type=0, $line=1) {
+
+		switch ($type) {
+			case 0:
+				$result = $this->db->query($request);
+
+				if ($result) {
+					if ($line == 1) {
+						return $this->db->fetch_object($result);
+					}
+					else {
+						return $result;
+					}
+				}
+				else {
+					return -1;
+				}
+
+				break;
+
+			case 1:
+				return $this->db->query($request);
+				break;
+			
+			default:
+				return -1;
+				break;
+		}
+
+	}
+
+	public function displayErrors() {
+		if (!empty($this->errors)) {
+			setEventMessage($this->errors, 'errors');
+			$this->errors = null;
+		}
+	}
+
+	function fetch($id)
 	{
-		global $PDOdb;
-		
-		if (empty($PDOdb)) $PDOdb = new TPDOdb;
-		
-		$object = new Tformation;
-		$object->load($PDOdb, $id, false);
-		
-		return $object->getNomUrl($withpicto);
-	}*/
-	
-	public function getLibStatut($mode=0)
-    {
-        return self::LibStatut($this->status, $mode);
-    }
+		$sql = " SELECT f.rowid, f.ref, f.date_cre, f.dated, f.help, f.fk_statut, f.fk_product, f.delayh, f.fk_product_fournisseur_price";
+		$sql.= " FROM ".MAIN_DB_PREFIX.$this->table_element." as f";
+		$sql.= " WHERE f.rowid=".$id;
+		$res = $this->db->query($sql);
+
+		if ($res) {
+			$obj = $this->db->fetch_object($res);
+
+			$this->id = $obj->rowid;
+			$this->ref = $obj->ref;
+			$this->date_cre = $obj->date_cre;
+			$this->dated = explode('-', $obj->dated)[2]."/".explode('-', $obj->dated)[1]."/".explode('-', $obj->dated)[0];
+			$this->status = $obj->fk_statut;
+			$this->fk_product = $obj->fk_product;
+			$this->help = $obj->help;
+			$this->delayh = $obj->delayh;
+			$this->fk_product_fournisseur_price = $obj->fk_product_fournisseur_price;
+			return 1;
+		}
+		else {
+			return -1;
+		}
+	}
+
+	/* ----------------------------- */
+	/* ---------- STATICS ---------- */
+	/* ----------------------------- */
 	
 	public static function LibStatut($status, $mode)
 	{
