@@ -62,6 +62,7 @@ durationH = Durée (Heure)
 durationD = Durée (Jours)
 Collaborator = Collaborateurs
 NoParticipate=Aucun Collaborateur
+Place=Lieu
 
 # CARD TPL
 Save=Enregistrer

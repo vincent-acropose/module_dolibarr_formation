@@ -21,6 +21,7 @@ class Formation extends CommonObject
 	public $duration = 0;
 	public $fk_product_fournisseur_price;
 	public $mail;
+	public $lieu;
 
 	// Statut
 	const STATUS_DRAFT = 0;
@@ -195,6 +196,10 @@ class Formation extends CommonObject
 				$this->fk_product_fournisseur_price = $value['fk_product_fournisseur_price'];
 			}
 
+			if (!empty($value['lieu'])) {
+				$this->lieu = $value['lieu'];
+			}
+
 		}
 	}
 
@@ -288,7 +293,7 @@ class Formation extends CommonObject
 			$this->duration = explode("h", $product->duration)[0];
 		}
 
-		$trainingCreate = $this->request('INSERT INTO '.MAIN_DB_PREFIX.$this->table_element.' (rowid, ref, label, date_cre, date_maj, fk_product, fk_statut, dated, datef, duration, help) VALUES ('.(int)$this->id.', "'.$this->ref.'", "'.$this->label.'", NOW(), NOW(), '.$this->fk_product.', '.$this->status.', "'.$this->dated.'", "'.$this->datef.'", '.$this->duration.', '.(float)$this->help.')', 1);
+		$trainingCreate = $this->request('INSERT INTO '.MAIN_DB_PREFIX.$this->table_element.' (rowid, ref, label, date_cre, date_maj, fk_product, fk_statut, dated, datef, duration, help, lieu) VALUES ('.(int)$this->id.', "'.$this->ref.'", "'.$this->label.'", NOW(), NOW(), '.$this->fk_product.', '.$this->status.', "'.$this->dated.'", "'.$this->datef.'", '.$this->duration.', '.(float)$this->help.', "'.$this->lieu.'")', 1);
 
 		if ($trainingCreate) {
 			return 0;
@@ -307,6 +312,7 @@ class Formation extends CommonObject
 		$param['datef'] = $this->datef;
 		$param['help'] = $this->help;
 		$param['duration'] = $this->duration;
+		$param['lieu'] = $this->lieu;
 
 		$newForm = new Formation($this->db);
 		$newForm->set_values($param);
@@ -433,6 +439,7 @@ class Formation extends CommonObject
 		$sql .= ", help=".$this->help;
 		$sql .= ", duration=".$this->duration;
 		$sql .= ", fk_product=".$this->fk_product;
+		$sql .= ", lieu='".$this->lieu."'";
 		if ($this->fk_product_fournisseur_price) $sql .= ", fk_product_fournisseur_price=".$this->fk_product_fournisseur_price;
 		$sql .= ", date_maj=NOW() WHERE rowid=".$this->id;
 
@@ -496,7 +503,7 @@ class Formation extends CommonObject
 
 	function fetch($id)
 	{
-		$sql = " SELECT f.rowid, f.ref, f.label, f.date_cre, f.dated, f.datef, f.help, f.fk_statut, f.fk_product, f.duration, f.fk_product_fournisseur_price";
+		$sql = " SELECT f.rowid, f.ref, f.label, f.date_cre, f.dated, f.datef, f.help, f.fk_statut, f.fk_product, f.duration, f.fk_product_fournisseur_price, f.lieu";
 		$sql.= " FROM ".MAIN_DB_PREFIX.$this->table_element." as f";
 		$sql.= " WHERE f.rowid=".$id;
 		$res = $this->db->query($sql);
@@ -515,6 +522,7 @@ class Formation extends CommonObject
 			$this->help = $obj->help;
 			$this->duration = $obj->duration;
 			$this->fk_product_fournisseur_price = $obj->fk_product_fournisseur_price;
+			$this->lieu = $obj->lieu;
 
 			if($this->id > 1) $this->ref_previous = $this->id - 1;
 			if($this->id < $this->getNextId() - 1) $this->ref_next = $this->id + 1;

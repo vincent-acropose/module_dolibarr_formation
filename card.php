@@ -189,7 +189,7 @@ if (empty($reshook))
         	$convocation = false;
 
 		    foreach($filearray as $key => $file) {
-		    	if (strstr($file['name'], 'Convocation')) {
+		    	if (strstr(strtolower($file['name']), 'convocation')) {
 		    		$convocation = $file;
 		    		break;
 		    	}
@@ -210,7 +210,7 @@ if (empty($reshook))
 	        	header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
 	        }
 	        else {
-	        	$object->errors = "Aucune convocation n'a été liée.";
+	        	$object->errors = "Aucune convocation n'a été ajoutée.";
 	        }
 
         	break;
@@ -266,6 +266,22 @@ if ($id > 0) {
 		print '<tr><td class="titlefieldcreate">' . $langs->trans('durationH') . '</td><td><input type=text name="duration" value='.$object->duration.'></td></tr>';
 
 		print '<tr><td class="titlefieldcreate">' . $langs->trans('HelpOPCA') . '</td><td><input type=text name="help" value='.$object->help.'></td></tr>';
+
+		// Lieu
+		print '<tr><td class="titlefieldcreate">' . $langs->trans('Place') . '</td><td>';
+		print '<select class="flat" name="lieu">';
+
+		if ($object->lieu == "externe") {
+			print '<option value="Interne">Interne</option>';
+			print '<option value="Externe" selected=selected>Externe</option>';
+		}
+		else {
+			print '<option value="Interne" selected=selected>Interne</option>';
+			print '<option value="Externe">Externe</option>';
+		}
+
+		print '</select>';
+		print '</td></tr>';
 
 		// Date
 		print '<tr><td>' . $langs->trans('DateTraining') . '</td><td>';
@@ -361,6 +377,10 @@ if ($id > 0) {
 	    print '<tr><td class="titlefield">'.$langs->trans('durationD');
 	    print '</td>';
 	    print '<td colspan="2">'.number_format(($object->duration/7), 2, ',', '').' '.$langs->trans('Days').'</td></tr>';
+
+	    print '<tr><td class="titlefield">'.$langs->trans('Place');
+	    print '</td>';
+	    print '<td colspan="2">'.$object->lieu.'</td></tr>';
 
 	    print '</table>';
 
@@ -499,6 +519,7 @@ if ($id > 0) {
 		print '<input type="hidden" name="action" value="addUser">';
 		print '<tbody>';
 		print '<tr>';
+		print '<td class="nobordernopadding widthpictotitle" valign="middle"><img src="/dolibarr/htdocs/theme/eldy/img/title_commercial.png" alt="" title="" class="valignmiddle" id="pictotitle"></td>';
 		print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$langs->trans('Collaborator').'</div></td>';
 		if ($object->status <= $object::STATUS_PREDICTION) {
 			print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$form->select_dolusers('', 'user', 1, $exclude, 0, '', '', $object->entity, 0, 0, '', 0, '', 'maxwidth300',1).'</div></td>';
@@ -688,6 +709,14 @@ else {
 
 		// Help
 		print '<tr><td class="titlefieldcreate">' . $langs->trans('HelpOPCA') . '</td><td><input type=text name="help"></td></tr>';
+
+		// Lieu
+		print '<tr><td class="titlefieldcreate">' . $langs->trans('Place') . '</td><td>';
+		print '<select class="flat" name="lieu">';
+		print '<option value="Interne" selected=selected>Interne</option>';
+		print '<option value="Externe">Externe</option>';
+		print '</select>';
+		print '</td></tr>';
 
 		// Date
 		print '<tr><td>' . $langs->trans('DateTraining') . '</td><td>';

@@ -6,6 +6,7 @@ CREATE TABLE llx_formation
     label text,
     date_cre datetime,
     date_maj datetime,
+    lieu varchar(100),
     dated date,
     datef date,
     help DOUBLE(24,8)  DEFAULT 0,
