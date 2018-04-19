@@ -30,7 +30,6 @@ require 'config.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/images.lib.php';
-require_once DOL_DOCUMENT_ROOT.'/product/class/propalmergepdfproduct.class.php';
 dol_include_once('/formation/class/formation.class.php');
 dol_include_once('/formation/lib/formation.lib.php');
 
@@ -38,9 +37,9 @@ if(empty($user->rights->formation->write)) accessforbidden();
 
 $langs->load('formation@formation');
 
-$id = GETPOST('id', 'int');
-$action=GETPOST('action','alpha');
-$confirm=GETPOST('confirm','alpha');
+$id = GETPOST('id');
+$action=GETPOST('action');
+$document=GETPOST('document');
 
 $hookmanager->initHooks(array('formationcard', 'globalcard'));
 
@@ -72,6 +71,15 @@ if (empty($reshook)) {
                 else {
                     setEventMessages('Echec de l\'envoi du fichier !','','errors');
                 }
+            }
+            break;
+
+        case 'delfile':
+            if (unlink($upload_dir.'/'.$document)) {
+                header('Location: '.dol_buildpath('/formation/document.php', 1).'?id='.$object->id);
+            }
+            else {
+                setEventMessages('Problème lors de la suppression du fichier','','errors');
             }
             break;
     }
@@ -109,7 +117,9 @@ if ($object->id)
 
     $linkback = '<a href="'.dol_buildpath('/formation/list.php', 1).'">'.$langs->trans("BackToList").'</a>';
 
-    dol_banner_tab($object, 'ref', $linkback, 1, 'ref');
+    $morehtmlstatus = $object->getLibStatut();
+
+    dol_banner_tab($object, 'id', $linkback, 1, 'rowid', 'ref', '<div class="refidno">'.$object->label.'</div>', '', 0, '', $morehtmlstatus);
 
     /* Détails Documents */
 
@@ -238,7 +248,7 @@ if ($object->id)
 
             print '<td align="center">&nbsp;</td>';
             print '<td class="valignmiddle right">';
-            print '<a href="/dolibarr/htdocs/product/document.php?action=editfile&amp;urlfile=A0000033%2Fetiquette_A0000033.pdf&amp;id=32&amp;id=32" class="editfilelink" rel="A0000033/etiquette_A0000033.pdf">';
+            print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&document='.$file["name"].'&action=delfile" class="editfilelink">';
             print '<img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" class="pictodelete">';
             print '</a>';
             print '</td>';

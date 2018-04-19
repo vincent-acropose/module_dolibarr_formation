@@ -2,6 +2,8 @@
 
 require 'config.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/core/lib/images.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.class.php';
@@ -18,6 +20,9 @@ $action = GETPOST('action');
 $id = GETPOST('id', 'int');
 $ref = GETPOST('ref');
 $fk_product = GETPOST('fk_product');
+$document=GETPOST('document');
+
+$upload_dir = dol_buildpath('/formation/documents');
 
 $mode = 'view';
 if (empty($user->rights->formation->write)) $mode = 'view'; // Force 'view' mode if can't edit object
@@ -167,6 +172,15 @@ if (empty($reshook))
 
 			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
 			break;
+
+		case 'delfile':
+            if (unlink($upload_dir.'/'.$document)) {
+                header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
+            }
+            else {
+                setEventMessages('Problème lors de la suppression du fichier','','errors');
+            }
+            break;
 	}
 
 	$object->displayErrors();
@@ -512,29 +526,107 @@ if ($id > 0) {
 
 	}
 
+	// Construit liste des fichiers
+	$filearray=dol_dir_list($upload_dir,"files",0,'','(\.meta|_preview.*\.png)$',"","",1);
 
-	/*
-	 * Documents generes
-	 */
+    /* Show documents */
+
     print '<div class="fichecenter"><div class="fichehalfleft">';
-    print '<a name="builddoc"></a>'; // ancre
+    print '<table class="centpercent notopnoleftnoright" style="margin-bottom: 2px;"><tbody>';
+    print '<tr>';
+    print '<td class="nobordernopadding widthpictotitle" valign="middle"><img src="/dolibarr/htdocs/theme/eldy/img/title_generic.png" alt="" title="" class="valignmiddle" id="pictotitle"></td>';
+    print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$langs->trans('joinFile').'</div></td>';
+    print '</tr>';
+    print '</tbody></table>';
 
-    // Documents
-    $modulepart='donation';
+    print '<div class="div-table-responsive-no-min">';
+    print '<table id="tablelines" class="liste" width="100%"><tbody>';
 
-    $objectref = dol_sanitizeFileName($object->ref);
-    $relativepath = '/'.$objectref.'.pdf';
-    $filedir = $conf->formation->dir_output . '/' . $objectref;
-    $urlsource=$_SERVER["PHP_SELF"]."?id=".$object->id;
-    $genallowed=$user->rights->formation->write;
-    $delallowed=$user->rights->formation->write;
+    print '<tr class="liste_titre nodrag nodrop">';
+    print '<th class="liste_titre" align="left"></th>';
+    print '<th class="liste_titre" align="right"></th>';
+    print '<th class="liste_titre" align="center"></th>';
+    print '<th class="liste_titre" align="center"></th>';
+    print '<th class="liste_titre"></th>';
+    print '<th class="liste_titre"></th>';
+    print '</tr>';
 
-    print $formfile->showdocuments($modulepart,$object->ref,$filedir,$urlsource,$genallowed,$delallowed,'',0,0,0,28,0,'',0,'',$object->default_lang, '', $object);
-    $somethingshown=$formfile->numoffiles;
+    foreach($filearray as $key => $file)
+    {
+        if (explode("_", $file['name'])[0] == $object->ref) {
 
-    print '</div><div class="fichehalfright"><div class="ficheaddleft">';
+            $fileExist = true;
 
-    print '</div></div></div>';
+            $extension = strrchr($file['name'], '.');
+
+            switch ($extension) {
+                case '.pdf':
+                    $image = "pdf.png";
+                    break;
+                
+                case '.png':
+                    $image = "image.png";
+                    break;
+
+                case '.jpg':
+                    $image = "image.png";
+                    break;
+
+                case '.jpeg':
+                    $image = "image.png";
+                    break;
+
+                default:
+                    $image = "other.png";
+                    break;
+            }
+
+
+            print '<tr id="row-2231" class="drag drop oddeven">';
+
+            print '<td class="tdoverflowmax300">';
+            print '<a class="pictopreview documentpreview" href="'.dol_buildpath('/formation/documents', 1)."/".$file["name"].'" target="_blank">';
+            print '<img src="/dolibarr/htdocs/theme/eldy/img/detail.png" alt="" title="Aperçu '.$file["name"].'" class="inline-block valigntextbottom">';
+            print '</a>';
+            print '<a class="paddingleft" href="'.dol_buildpath('/formation/documents', 1)."/".$file["name"].'">';
+            print '<img src="/dolibarr/htdocs/theme/common/mime/'.$image.'" alt="" title="'.$file["name"].' ('.$file["size"]." ".$langs->trans("bytes").')" class="inline-block valigntextbottom"> ';
+            print $file["name"];
+            print '</a>';
+            print '</td>';
+
+            print '<td width="80px" align="right">';
+            print $file["size"]." ".$langs->trans("bytes");
+            print '</td>';
+
+            $date = date_create();
+            date_timestamp_set($date, $file['date']);
+            print '<td width="130px" align="center">';
+            print date_format($date, 'd/m/Y H:i');
+            print '</td>';
+
+            print '<td align="center">&nbsp;</td>';
+            print '<td class="valignmiddle right">';
+            print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&document='.$file["name"].'&action=delfile" class="editfilelink">';
+            print '<img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" class="pictodelete">';
+            print '</a>';
+            print '</td>';
+
+            print '</tr>';
+        }
+
+    }
+
+    if (!$fileExist) {
+        print '<tr id="row-2231" class="drag drop oddeven">';
+        print '<td class="tdoverflowmax300">'.$langs->trans('NoFile').'</td>';
+        print '</tr>';
+    }
+
+    print '</tbody></table>';
+    print '</div>';
+    print '</div></div>';
+
+    /* End */
 
 	dol_fiche_end();
 }
