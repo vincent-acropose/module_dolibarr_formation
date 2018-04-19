@@ -9,6 +9,7 @@ class Formation extends CommonObject
 
 	public $table_element='formation';
 	public $table_link_user='formation_users';
+	public $table_conf='formation_conf';
 
 	public $id;
 	public $ref;
@@ -19,6 +20,7 @@ class Formation extends CommonObject
 	public $help;
 	public $duration = 0;
 	public $fk_product_fournisseur_price;
+	public $mail;
 
 	// Statut
 	const STATUS_DRAFT = 0;
@@ -45,6 +47,7 @@ class Formation extends CommonObject
 		
 		$this->db = $db;
 		$this->status = self::STATUS_DRAFT;
+		$this->mail = $this->getMail();
 	}
 
 	/* ----------------------------- */
@@ -114,6 +117,15 @@ class Formation extends CommonObject
         $result.=$link.$this->ref.$linkend;
 		
         return $result;
+	}
+
+	public function getNextId() {
+		$id = $this->request("SELECT MAX(rowid) AS rowid FROM ".MAIN_DB_PREFIX.$this->table_element);
+		$id != -1 ? $id = $id->rowid : $this->errors = "Une erreur est survenu lors de la création de la formation: Impossible de récupérer le bon ID";
+
+		is_null($id) ? $id = 1 : $id = $id+1;
+
+		return $id;
 	}
 
 	/* ----------------------------- */
@@ -238,6 +250,26 @@ class Formation extends CommonObject
 		$this->status = self::STATUS_CANCEL;
 
 		return $this->save();
+	}
+
+	public function setMail($mail) {
+		if (is_string($mail)) {
+			$this->$mail = $mail;
+			$this->setConf("mail", $this->$mail);
+		}
+	}
+
+	public function getMail() {
+		return $this->request("SELECT * FROM ".MAIN_DB_PREFIX.$this->table_conf." WHERE nom='mail'")->value;
+	}
+
+	public function setConf($name, $value) {
+		if ($this->request("SELECT * FROM ".MAIN_DB_PREFIX.$this->table_conf." WHERE nom='".$name."'")->value != "")  {
+			$this->request("UPDATE ".MAIN_DB_PREFIX.$this->table_conf." SET value='".$value."' WHERE nom='".$name."'", 1);
+		}
+		else {
+			$this->request('INSERT INTO '.MAIN_DB_PREFIX.$this->table_conf.' (nom, value) VALUES ("'.$name.'", "'.$value.'")', 1);
+		}
 	}
 
 	/* ----------------------------- */
@@ -455,7 +487,7 @@ class Formation extends CommonObject
 
 	}
 
-	public function displayErrors() {
+	public function displayErrors($message="") {
 		if (!empty($this->errors)) {
 			setEventMessage($this->errors, 'errors');
 			$this->errors = null;
@@ -483,6 +515,9 @@ class Formation extends CommonObject
 			$this->help = $obj->help;
 			$this->duration = $obj->duration;
 			$this->fk_product_fournisseur_price = $obj->fk_product_fournisseur_price;
+
+			if($this->id > 1) $this->ref_previous = $this->id - 1;
+			if($this->id < $this->getNextId() - 1) $this->ref_next = $this->id + 1;
 			return 1;
 		}
 		else {

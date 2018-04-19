@@ -9,6 +9,7 @@ require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.class.php';
 require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 dol_include_once('/formation/class/formation.class.php');
 dol_include_once('/formation/lib/formation.lib.php');
 
@@ -39,7 +40,7 @@ if ($object->fk_product_fournisseur_price) {
 	$fournisseur = new Fournisseur($db);
 	$fournisseur->fetch($fournPrice->fourn_id);
 }
-
+$filearray=dol_dir_list($upload_dir,"files",0,'','(\.meta|_preview.*\.png)$',"","",1);
 $hookmanager->initHooks(array('formationcard', 'globalcard'));
 
 /*
@@ -181,6 +182,38 @@ if (empty($reshook))
                 setEventMessages('Problème lors de la suppression du fichier','','errors');
             }
             break;
+
+        case 'sendMail':
+        	$users = $object->getUsers();
+        	$recipient = new User($db);
+        	$convocation = false;
+
+		    foreach($filearray as $key => $file) {
+		    	if (strstr($file['name'], 'Convocation')) {
+		    		$convocation = $file;
+		    		break;
+		    	}
+		    }
+
+		    if ($convocation) {
+	        	foreach ($users as $user) {
+	        		$recipient->fetch($user['fk_user']);
+
+	        		$object->mail = str_replace("[prenom]", $recipient->firstname, $object->mail);
+	        		$object->mail = str_replace("[nom]", $recipient->lastname, $object->mail);
+	        		$object->mail = str_replace("[libelle]", $object->label, $object->mail);
+
+					$mailfile = new CMailFile("Convocation ".$object->label, $recipient->email, "info@dolibarr.com", $object->mail, [$convocation['fullname']], ['application/pdf'], ['Convocation '.$object->label.".pdf"], "", "", 0, 1);
+					$mailfile->sendfile();
+	        	}
+
+	        	header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
+	        }
+	        else {
+	        	$object->errors = "Aucune convocation n'a été liée.";
+	        }
+
+        	break;
 	}
 
 	$object->displayErrors();
@@ -260,7 +293,7 @@ if ($id > 0) {
 		// Gestion des participants à la formation
 		$users = $object->getUsers();
 
-		if ($users != -1) {
+		if ($users != -1 && $users->num_rows > 0) {
 
 			$tabParticipate = "";
 			$salaryCost = 0;
@@ -274,8 +307,13 @@ if ($id > 0) {
 
 				$tabParticipate .= '<tr class="oddeven"><td>'.$participante->getNomUrl(1).'</td>';	
 				$tabParticipate .= '<td>'.$participante->job.'</td>';	
-				$tabParticipate .= '<td><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delUser&user='.$participante->id.'"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td></tr>';
+				if ($object->status < $object::STATUS_PROGRAM) $tabParticipate .= '<td><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delUser&user='.$participante->id.'"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td>';
+
 			}
+		}
+
+		elseif ($users != -1 && $users->num_rows == 0) {
+			$tabParticipate .= '<tr class="oddeven"><td>'.$langs->trans('NoParticipate').'</td></tr>';	
 		}
 
 		else {
@@ -292,7 +330,7 @@ if ($id > 0) {
 
 		$linkback = '<a href="'.dol_buildpath('/formation/list.php', 1).'">'.$langs->trans("BackToList").'</a>';
 
-	    $object->next_prev_filter="";
+	    $object->next_prev_filter="id";
 
 	    $morehtmlstatus = $object->getLibStatut();
 
@@ -385,7 +423,7 @@ if ($id > 0) {
 			print '<td class="linecoldescription">'.$fournisseur->getNomUrl(1).'</td>';
 			print '<td class="linecoldescription">'.number_format($fournPrice->fourn_tva_tx, 2, ',', '').'</td>';
 			print '<td class="linecoldescription">'.number_format($fournPrice->fourn_unitprice, 2, ',', '').'</td>';
-			print '<td class="linecoldescription"><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delFournPrice"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td>';
+			if ($object->status < $object::STATUS_PROGRAM) print '<td class="linecoldescription"><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delFournPrice"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td>';
 
 		}
 
@@ -406,7 +444,7 @@ if ($id > 0) {
 
 		print '</tr>';
 		print '</tbody></table>';
-	    print '</div>';
+	    print '</div></div>';
 		
 		/* End */
 
@@ -466,6 +504,12 @@ if ($id > 0) {
 			print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$form->select_dolusers('', 'user', 1, $exclude, 0, '', '', $object->entity, 0, 0, '', 0, '', 'maxwidth300',1).'</div></td>';
 			print '<td class="nobordernopadding" valign="middle"><div class="titre"><input type="submit" class="button" value="'.$langs->trans("Add").'"></div></td>';
 		}
+		if ($object->status == $object::STATUS_PROGRAM) {
+			print '<td class="nobordernopadding" valign="middle"><div class="titre">';
+			print '<input type="hidden" name="action" value="sendMail">';
+			print '<input type="submit" class="button" value="'.$langs->trans("SendMail").'">';
+			print '</div></td>';
+		}
 		print '</tr>';
 		print '</tbody>';
 		print '</table></form>';
@@ -476,8 +520,6 @@ if ($id > 0) {
 		print '<table class="noborder listactions" width="100%"><tbody>';
 		print '<tr class="liste_titre"><th class="liste_titre">Utilisateur</th><th class="liste_titre">Poste</th><th></th></tr>';
 
-		$users = $object->getUsers();
-
 		print $tabParticipate;
 		
 		print '</tbody></table>';
@@ -485,7 +527,82 @@ if ($id > 0) {
 
 		print '</div></div>';	
 
-	    print '<div class="clearboth"></div></div>';
+	    print '<div class="clearboth"></div>';
+	    print '<br /><br />';
+
+	    /* Show documents */
+
+	    print '<div class="fichecenter"><div class="fichehalfleft">';
+	    print '<table class="centpercent notopnoleftnoright" style="margin-bottom: 2px;"><tbody>';
+	    print '<tr>';
+	    print '<td class="nobordernopadding widthpictotitle" valign="middle"><img src="/dolibarr/htdocs/theme/eldy/img/title_generic.png" alt="" title="" class="valignmiddle" id="pictotitle"></td>';
+	    print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$langs->trans('joinFile').'</div></td>';
+	    print '</tr>';
+	    print '</tbody></table>';
+
+	    print '<div class="div-table-responsive-no-min">';
+	    print '<table id="tablelines" class="liste" width="100%"><tbody>';
+
+	    print '<tr class="liste_titre nodrag nodrop">';
+	    print '<th class="liste_titre" align="left"></th>';
+	    print '<th class="liste_titre" align="right"></th>';
+	    print '<th class="liste_titre" align="center"></th>';
+	    print '<th class="liste_titre" align="center"></th>';
+	    print '<th class="liste_titre"></th>';
+	    print '<th class="liste_titre"></th>';
+	    print '</tr>';
+
+	    foreach($filearray as $key => $file)
+	    {
+	        if (explode("_", $file['name'])[0] == $object->ref) {
+
+	            $fileExist = true;
+
+	            $image = $object->check_extension($file['name']);
+
+	            print '<tr id="row-2231" class="drag drop oddeven">';
+
+	            print '<td class="tdoverflowmax300">';
+	            print '<a class="pictopreview documentpreview" href="'.dol_buildpath('/formation/documents', 1)."/".$file["name"].'" target="_blank">';
+	            print '<img src="/dolibarr/htdocs/theme/eldy/img/detail.png" alt="" title="Aperçu '.$file["name"].'" class="inline-block valigntextbottom">';
+	            print '</a>';
+	            print '<a class="paddingleft" href="'.dol_buildpath('/formation/documents', 1)."/".$file["name"].'">';
+	            print '<img src="/dolibarr/htdocs/theme/common/mime/'.$image.'" alt="" title="'.$file["name"].' ('.$file["size"]." ".$langs->trans("bytes").')" class="inline-block valigntextbottom"> ';
+	            print $file["name"];
+	            print '</a>';
+	            print '</td>';
+
+	            print '<td width="130px" align="right">';
+	            print $file["size"]." ".$langs->trans("bytes");
+	            print '</td>';
+
+	            $date = date_create();
+	            date_timestamp_set($date, $file['date']);
+	            print '<td width="130px" align="center">';
+	            print date_format($date, 'd/m/Y H:i');
+	            print '</td>';
+
+	            print '<td align="center">&nbsp;</td>';
+	            print '<td class="valignmiddle right">';
+	            print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&document='.$file["name"].'&action=delfile" class="editfilelink">';
+	            print '<img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" class="pictodelete">';
+	            print '</a>';
+	            print '</td>';
+
+	            print '</tr>';
+	        }
+
+	    }
+
+	    if (!$fileExist) {
+	        print '<tr id="row-2231" class="drag drop oddeven">';
+	        print '<td class="tdoverflowmax300">'.$langs->trans('NoFile').'</td>';
+	        print '</tr>';
+	    }
+
+	    print '</tbody></table>';
+	    print '</div>';
+	    print '</div></div>';
 
 	    switch ($action) {
 			case "valid":
@@ -525,83 +642,6 @@ if ($id > 0) {
 		}
 
 	}
-
-	// Construit liste des fichiers
-	$filearray=dol_dir_list($upload_dir,"files",0,'','(\.meta|_preview.*\.png)$',"","",1);
-
-    /* Show documents */
-
-    print '<div class="fichecenter"><div class="fichehalfleft">';
-    print '<table class="centpercent notopnoleftnoright" style="margin-bottom: 2px;"><tbody>';
-    print '<tr>';
-    print '<td class="nobordernopadding widthpictotitle" valign="middle"><img src="/dolibarr/htdocs/theme/eldy/img/title_generic.png" alt="" title="" class="valignmiddle" id="pictotitle"></td>';
-    print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$langs->trans('joinFile').'</div></td>';
-    print '</tr>';
-    print '</tbody></table>';
-
-    print '<div class="div-table-responsive-no-min">';
-    print '<table id="tablelines" class="liste" width="100%"><tbody>';
-
-    print '<tr class="liste_titre nodrag nodrop">';
-    print '<th class="liste_titre" align="left"></th>';
-    print '<th class="liste_titre" align="right"></th>';
-    print '<th class="liste_titre" align="center"></th>';
-    print '<th class="liste_titre" align="center"></th>';
-    print '<th class="liste_titre"></th>';
-    print '<th class="liste_titre"></th>';
-    print '</tr>';
-
-    foreach($filearray as $key => $file)
-    {
-        if (explode("_", $file['name'])[0] == $object->ref) {
-
-            $fileExist = true;
-
-            $image = $object->check_extension($file['name']);
-
-            print '<tr id="row-2231" class="drag drop oddeven">';
-
-            print '<td class="tdoverflowmax300">';
-            print '<a class="pictopreview documentpreview" href="'.dol_buildpath('/formation/documents', 1)."/".$file["name"].'" target="_blank">';
-            print '<img src="/dolibarr/htdocs/theme/eldy/img/detail.png" alt="" title="Aperçu '.$file["name"].'" class="inline-block valigntextbottom">';
-            print '</a>';
-            print '<a class="paddingleft" href="'.dol_buildpath('/formation/documents', 1)."/".$file["name"].'">';
-            print '<img src="/dolibarr/htdocs/theme/common/mime/'.$image.'" alt="" title="'.$file["name"].' ('.$file["size"]." ".$langs->trans("bytes").')" class="inline-block valigntextbottom"> ';
-            print $file["name"];
-            print '</a>';
-            print '</td>';
-
-            print '<td width="80px" align="right">';
-            print $file["size"]." ".$langs->trans("bytes");
-            print '</td>';
-
-            $date = date_create();
-            date_timestamp_set($date, $file['date']);
-            print '<td width="130px" align="center">';
-            print date_format($date, 'd/m/Y H:i');
-            print '</td>';
-
-            print '<td align="center">&nbsp;</td>';
-            print '<td class="valignmiddle right">';
-            print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&document='.$file["name"].'&action=delfile" class="editfilelink">';
-            print '<img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" class="pictodelete">';
-            print '</a>';
-            print '</td>';
-
-            print '</tr>';
-        }
-
-    }
-
-    if (!$fileExist) {
-        print '<tr id="row-2231" class="drag drop oddeven">';
-        print '<td class="tdoverflowmax300">'.$langs->trans('NoFile').'</td>';
-        print '</tr>';
-    }
-
-    print '</tbody></table>';
-    print '</div>';
-    print '</div></div>';
 
     /* End */
 

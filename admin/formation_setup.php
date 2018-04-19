@@ -31,6 +31,7 @@ if (! $res) {
 // Libraries
 require_once DOL_DOCUMENT_ROOT . "/core/lib/admin.lib.php";
 require_once '../lib/formation.lib.php';
+dol_include_once('/formation/class/formation.class.php');
 
 // Translations
 $langs->load("formation@formation");
@@ -43,35 +44,14 @@ if (! $user->admin) {
 // Parameters
 $action = GETPOST('action', 'alpha');
 
+$object = new Formation($db);
+
 /*
  * Actions
  */
-if (preg_match('/set_(.*)/',$action,$reg))
-{
-	$code=$reg[1];
-	if (dolibarr_set_const($db, $code, GETPOST($code), 'chaine', 0, '', $conf->entity) > 0)
-	{
-		header("Location: ".$_SERVER["PHP_SELF"]);
-		exit;
-	}
-	else
-	{
-		dol_print_error($db);
-	}
-}
-	
-if (preg_match('/del_(.*)/',$action,$reg))
-{
-	$code=$reg[1];
-	if (dolibarr_del_const($db, $code, 0) > 0)
-	{
-		Header("Location: ".$_SERVER["PHP_SELF"]);
-		exit;
-	}
-	else
-	{
-		dol_print_error($db);
-	}
+if ($action == "set_MAIL") {
+	$object->setMail(GETPOST('mail'));
+	header('Location: '.$_SERVER["PHP_SELF"]);
 }
 
 /*
@@ -102,36 +82,42 @@ print '<table class="noborder" width="100%">';
 print '<tr class="liste_titre">';
 print '<td>'.$langs->trans("Parameters").'</td>'."\n";
 print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="center" width="100">'.$langs->trans("Value").'</td>'."\n";
+print '<td align="center" width="100" colspan=2>'.$langs->trans("Value").'</td>'."\n";
 print '</tr>';
 
 // Example with a yes / no select
 $var=!$var;
 print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("ParamLabel").'</td>';
+print '<td>'.$langs->trans("ParamLabelMail").'</td>';
 print '<td align="center" width="20">&nbsp;</td>';
 print '<td align="right" width="300">';
 print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_CONSTNAME">';
-print $form->selectyesno("CONSTNAME",$conf->global->CONSTNAME,1);
+print '<input type="hidden" name="action" value="set_MAIL">';
+print '<textarea name="mail">'.$object->mail.'</textarea>';
+print '<div class="classfortooltip inline-block inline-block" style="vertical-align: top;;">';
+print '<img src="/dolibarr/htdocs/theme/eldy/img/info.png" alt="" title="" style="vertical-align: middle;">';
+print '</div>';
+print '</td>';
+print '<td>';
 print '<input type="submit" class="button" value="'.$langs->trans("Modify").'">';
 print '</form>';
-print '</td></tr>';
-
-$var=!$var;
-print '<tr '.$bc[$var].'>';
-print '<td>'.$langs->trans("ParamLabel").'</td>';
-print '<td align="center" width="20">&nbsp;</td>';
-print '<td align="center" width="300">';
-print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">'; // Keep form because ajax_constantonoff return single link with <a> if the js is disabled
-print '<input type="hidden" name="token" value="'.$_SESSION['newtoken'].'">';
-print '<input type="hidden" name="action" value="set_CONSTNAME">';
-print ajax_constantonoff('CONSTNAME');
-print '</form>';
-print '</td></tr>';
+print '</td>';
+print '<td align="center"></td></tr>';
 
 print '</table>';
+
+print '<div id="tiptip_holder" class="tip_left_top" style="max-width: 700px; margin: 293px 0px 0px 1420px; display: none;">';
+print '<div id="tiptip_arrow" style="margin-left: 320px; margin-top: 164px;">';
+print '<div id="tiptip_arrow_inner">';
+print '</div>';
+print '</div>';
+print '<div id="tiptip_content">';
+print '<u>Codes disponibles :</u><br>
+[prenom]: <font class="ok">Prénom du destinataire</font><br>
+[nom]: <font class="ok">Nom du destinataire</font><br>
+[libelle]: <font class="ok">Libelle de la formation</font>';
+print '</div>';
+print '</div>';
 
 llxFooter();
 

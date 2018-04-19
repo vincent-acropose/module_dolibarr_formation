@@ -186,7 +186,7 @@ if ($object->id)
 
     print '<tr class="liste_titre nodrag nodrop">';
     print '<th class="liste_titre" align="left"><a href="/dolibarr/htdocs/product/document.php?sortfield=name&amp;sortorder=asc&amp;begin=&amp;id=32&amp;id=32">'.$langs->trans('joinFile').'</a></th>';
-    print '<th class="liste_titre" align="right"><a href="/dolibarr/htdocs/product/document.php?sortfield=size&amp;sortorder=asc&amp;begin=&amp;id=32&amp;id=32">'.$langs->trans('Size').'</a></th>';
+    print '<th class="liste_titre" align="center"><a href="/dolibarr/htdocs/product/document.php?sortfield=size&amp;sortorder=asc&amp;begin=&amp;id=32&amp;id=32">'.$langs->trans('Size').'</a></th>';
     print '<th class="liste_titre" align="center"><a href="/dolibarr/htdocs/product/document.php?sortfield=date&amp;sortorder=asc&amp;begin=&amp;id=32&amp;id=32">'.$langs->trans('Date').'</a></th>';
     print '<th class="liste_titre" align="center"></th>';
     print '<th class="liste_titre"></th>';
@@ -213,7 +213,7 @@ if ($object->id)
             print '</a>';
             print '</td>';
 
-            print '<td width="80px" align="right">';
+            print '<td width="130px" align="center">';
             print $file["size"]." ".$langs->trans("bytes");
             print '</td>';
 

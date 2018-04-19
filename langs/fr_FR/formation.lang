@@ -61,6 +61,7 @@ InCharge=Reste à charge
 durationH = Durée (Heure)
 durationD = Durée (Jours)
 Collaborator = Collaborateurs
+NoParticipate=Aucun Collaborateur
 
 # CARD TPL
 Save=Enregistrer
@@ -106,11 +107,14 @@ ConfirmReopen=Etes-vous sur de vouloir re-ouvrir la formation
 
 # Upload Files
 joinFile=Fichiers joints
-NoFile=Aucun
+NoFile=Aucun Fichier
 addNewFile=Ajouter un nouveau fichier
 sendFile=Envoyer Fichier
 Send=Envoyer
 bytes=Octets
+
+# Params
+ParamLabelMail=Mail Convocation
 
 #User
 Salary=Salaire Horaire Brut
