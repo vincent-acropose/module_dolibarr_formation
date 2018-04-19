@@ -490,6 +490,44 @@ class Formation extends CommonObject
 		}
 	}
 
+	function check_extension($name) {
+		$extension = strrchr($name, '.');
+        switch ($extension) {
+            case '.pdf':
+                $image = "pdf.png";
+                break;
+            
+            case '.png':
+                $image = "image.png";
+                break;
+
+            case '.jpg':
+                $image = "image.png";
+                break;
+
+            case '.jpeg':
+                $image = "image.png";
+                break;
+
+            case '.doc':
+                $image = "doc.png";
+                break;
+
+            case '.docx':
+                $image = "doc.png";
+                break;
+
+            case '.odt':
+                $image = "ooffice.png";
+                break;
+
+            default:
+                $image = "other.png";
+                break;
+        }
+        return $image;
+	}
+
 	/* ----------------------------- */
 	/* ---------- STATICS ---------- */
 	/* ----------------------------- */

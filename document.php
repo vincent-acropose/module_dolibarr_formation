@@ -199,30 +199,7 @@ if ($object->id)
 
             $fileExist = true;
 
-            $extension = strrchr($file['name'], '.');
-
-            switch ($extension) {
-                case '.pdf':
-                    $image = "pdf.png";
-                    break;
-                
-                case '.png':
-                    $image = "image.png";
-                    break;
-
-                case '.jpg':
-                    $image = "image.png";
-                    break;
-
-                case '.jpeg':
-                    $image = "image.png";
-                    break;
-
-                default:
-                    $image = "other.png";
-                    break;
-            }
-
+            $image = $object->check_extension($file['name']);
 
             print '<tr id="row-2231" class="drag drop oddeven">';
 
