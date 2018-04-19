@@ -44,7 +44,7 @@ class modformation extends DolibarrModules
 
         $this->db = $db;
 
-		$this->editor_name = 'Acropose';
+		$this->editor_name = 'Acropose/ATM';
 		$this->editor_url = 'http://www.acropose.com/';
 		
 		// Id for module (must be unique).
@@ -90,7 +90,9 @@ class modformation extends DolibarrModules
 		//							'dir' => array('output' => 'othermodulename'),      // To force the default directories names
 		//							'workflow' => array('WORKFLOW_MODULE1_YOURACTIONTYPE_MODULE2'=>array('enabled'=>'! empty($conf->module1->enabled) && ! empty($conf->module2->enabled)', 'picto'=>'yourpicto@formation')) // Set here all workflow context managed by module
 		//                        );
-		$this->module_parts = array();
+		$this->module_parts = array(
+			'hooks' => array('usercard')
+		);
 
 		// Data directories to create when module is enabled.
 		// Example: this->dirs = array("/formation/temp");
@@ -186,19 +188,25 @@ class modformation extends DolibarrModules
 		// $r++;
 
 		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
-		$this->rights[$r][1] = 'Voir les formations';	// Permission label
+		$this->rights[$r][1] = 'Consulter les formations';	// Permission label
 		$this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
 		$this->rights[$r][4] = 'read';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$r++;
 		
 		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
-		$this->rights[$r][1] = 'Créer des formations';	// Permission label
+		$this->rights[$r][1] = 'Créer/modifier des formations';	// Permission label
 		$this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
 		$this->rights[$r][4] = 'write';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$r++;
 
+		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
+		$this->rights[$r][1] = 'Consulter/modifier salaire des collaborateurs';	// Permission label
+		$this->rights[$r][3] = 0; 					// Permission by default for new user (0/1)
+		$this->rights[$r][4] = 'salary';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
+		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
+		$r++;
 
 		// Main menu entries
 		$this->menu = array();			// List of menus to add
@@ -339,6 +347,12 @@ class modformation extends DolibarrModules
 		dol_include_once('/formation/script/create-maj-base.php');
 
 		$result=$this->_load_tables('/formation/sql/');
+
+		// Create extrafields
+		include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+		$extrafields = new ExtraFields($this->db);
+
+		$result=$extrafields->addExtraField('salaire', "Salaire Horaire Brut", 'varchar', 0, 10, 'user', 0, 0, '', '', 1, '$user->rights->formation->salary', 0, 0, '', '', 'formation@formation');
 
 		return $this->_init($sql, $options);
 	}

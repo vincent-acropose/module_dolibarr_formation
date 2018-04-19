@@ -13,15 +13,16 @@ Showformation=Afficher formation
 Totalht=Total HT
 
 # MENU
-formationMenu=Formations
-TopMenuformation=Formations
+formationMenu=Formation
+TopMenuformation=Formation
 LeftMenuformationCreate=Nouvelle formation
 LeftMenuformationList=Liste
 
 # STATUS
 formationStatusDraft=Brouillon (à valider)
 formationStatusValidated=Validée (à prévoir)
-formationStatusPrediction=Prédictionnel
+formationStatusPrediction=Prévue
+formationStatusProgram=Programmée
 formationStatusFinish=Terminée (fermée)
 formationStatusCancel=Annulée (fermée)
 
@@ -35,30 +36,30 @@ Finish=Terminé
 TrainingArea=Espace formations
 TrainingDraft=Formations en brouillon
 TrainingOpen=Formations ouvertes
-TrainingPrediction=Formations prévisionnelles
+TrainingPrediction=Formations prévues
 
 # LIST
 formationList=Liste des formations
 Noformation=(vide)
-begin=Date de Début
 status=Etat
 
 # CARD
 Newformation=Création formation
 Editformation=Modifier formation
 formationCard=Fiche formation
+formationDocument=Fichiers joint
 RefTraining=Service
 NameUser=Collaborateur
-DateTraining=Date de formation
+DateTraining=Date de début de formation
+DateTrainingFinish=Date de fin de formation
 Training = Formation
 PriceP=Coût Pédagogique
 PriceS=Coût Salariale
 PriceT=Total HT
-Help=Aides
+HelpOPCA=Aides OPCA
 InCharge=Reste à charge
-TrainingDate=Date de formation
-DalayH = Durée (Heure)
-DelayD = Durée (Jours)
+durationH = Durée (Heure)
+durationD = Durée (Jours)
 Collaborator = Collaborateurs
 
 # CARD TPL
@@ -66,12 +67,14 @@ Save=Enregistrer
 CreateDraft=Créer brouillon
 Cancel=Annuler
 Validate=Valider
+Prediction=Prévus
 Predict=Prévoir
 Modify=Modifier
 Reopen=Rouvrir
 ToClone=Cloner
 Delete=Supprimer
 UnPrediction=Ne plus prévoir
+Program=Programmer
 
 # FORM LIST
 DateCre=Date Début
@@ -92,11 +95,22 @@ DeletreTraining=Supprimer la formation
 ConfirmDelete=Etes-vous sur de vouloir supprimer la formation
 PredictTraining=Prévoir la formation
 ConfirmPrediction=Etes-vous sur de vouloir prévoir la formation
+ProgramTraining=Programmer la formation
+ConfirmProgram=Etes-vous sur de vouloir programmer la formation
 FinishTraining=Terminer la formation
 ConfirmFinish=Etes-vous sur de vouloir terminer la formation
 CancelTraining=Annuler la formation
 ConfirmCancel=Etes-vous sur de vouloir annuler la formation
 ReopenTraining=Re-ouvrir la formation
 ConfirmReopen=Etes-vous sur de vouloir re-ouvrir la formation
-UnPredictTraining=De-programmer la formation
-ConfirmUnpredict=Etes-vous sur de vouloir de-programmer la formation
+
+# Upload Files
+joinFile=Fichiers joints
+NoFile=Aucun
+addNewFile=Ajouter un nouveau fichier
+sendFile=Envoyer Fichier
+Send=Envoyer
+bytes=Octets
+
+#User
+Salary=Salaire Horaire Brut

@@ -6,6 +6,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.class.php';
 require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.product.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 dol_include_once('/formation/class/formation.class.php');
 dol_include_once('/formation/lib/formation.lib.php');
 
@@ -47,7 +48,6 @@ if ($reshook < 0) setEventMessages($hookmanager->error, $hookmanager->errors, 'e
 if (empty($reshook))
 {
 
-	$error = 0;
 	switch ($action) {
 		case 'create':
 			if (GETPOST('create') == "newTraining") {
@@ -64,6 +64,9 @@ if (empty($reshook))
 
 		case 'edit':
 			if (GETPOST('edit') == "edit") {
+				if ($object->status == $object::STATUS_PROGRAM) {
+					$object->status = $object::STATUS_PREDICTION;
+				}
 				$object->set_values($_REQUEST); // Set standard attributes
 				$object->save();
 
@@ -139,6 +142,13 @@ if (empty($reshook))
 		case 'confirm_prediction':
 			if (!empty($user->rights->formation->write)) $object->setPredict();
 
+			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
+			exit();
+			break;
+
+		case 'confirm_program':
+			if (!empty($user->rights->formation->write)) $object->setProgram();
+
 			if (empty($object->errors)) {
 				header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
 				exit();
@@ -157,12 +167,6 @@ if (empty($reshook))
 
 			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
 			break;
-
-		case 'confirm_unpredict':
-			if (!empty($user->rights->formation->write)) $object->setValid();
-
-			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
-			break;
 	}
 
 	$object->displayErrors();
@@ -172,7 +176,7 @@ if (empty($reshook))
  * View
  */
 $form = new Form($db);
-$text=$langs->trans('Validate');
+$formfile = new FormFile($db);
 
 $title=$langs->trans("formation");
 llxHeader('',$title);
@@ -192,6 +196,8 @@ if ($id > 0) {
 		print '<table class="border" width="100%">';
 		// Ref new object
 		print '<tr><td class="titlefieldcreate fieldrequired">' . $langs->trans('Ref') . '</td><td><input type=text name="ref" value=' . $object->ref . '></td></tr>';
+		// Label new object
+		print '<tr><td class="titlefieldcreate">' . $langs->trans('Label') . '</td><td><input type=text name="label" value=' . $object->label . '></td></tr>';
 		// Ref training product
 		print '<tr><td class="titlefieldcreate fieldrequired">' . $langs->trans('RefTraining') . '</td><td>';
 		print $form->select_produits($object->fk_product, 'fk_product', 1,20, 0, 1, 2, '', 1);
@@ -210,13 +216,16 @@ if ($id > 0) {
 		}
 		print '</td></tr>';
 
-		print '<tr><td class="titlefieldcreate">' . $langs->trans('DalayH') . '</td><td><input type=text name="delayh" value='.$object->delayh.'></td></tr>';
+		print '<tr><td class="titlefieldcreate">' . $langs->trans('durationH') . '</td><td><input type=text name="duration" value='.$object->duration.'></td></tr>';
 
-		print '<tr><td class="titlefieldcreate">' . $langs->trans('Help') . '</td><td><input type=text name="help" value='.$object->help.'></td></tr>';
+		print '<tr><td class="titlefieldcreate">' . $langs->trans('HelpOPCA') . '</td><td><input type=text name="help" value='.$object->help.'></td></tr>';
 
 		// Date
 		print '<tr><td>' . $langs->trans('DateTraining') . '</td><td>';
-		$form->select_date(explode('/', $object->dated)[2]."-".explode('/', $object->dated)[1]."-".explode('/', $object->dated)[0], 'dated', '', '', '', "addprop", 1, 1);
+		$form->select_date($object->dated, 'dated', '', '', '', "addprop", 1, 1);
+		print '</td></tr>';
+		print '<tr><td>' . $langs->trans('DateTrainingFinish') . '</td><td>';
+		$form->select_date($object->datef, 'datef', '', '', '', "addprop", 1, 1);
 		print '</td></tr>';
 		print "</table>";
 
@@ -234,6 +243,32 @@ if ($id > 0) {
 
 	else {
 
+		// Gestion des participants à la formation
+		$users = $object->getUsers();
+
+		if ($users != -1) {
+
+			$tabParticipate = "";
+			$salaryCost = 0;
+
+			foreach ($users as $user) {
+
+				$participante = new User($db);
+				$participante->fetch($user['fk_user']);
+
+				$salaryCost += (float)$participante->array_options['options_salaire'];
+
+				$tabParticipate .= '<tr class="oddeven"><td>'.$participante->getNomUrl(1).'</td>';	
+				$tabParticipate .= '<td>'.$participante->job.'</td>';	
+				$tabParticipate .= '<td><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delUser&user='.$participante->id.'"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td></tr>';
+			}
+		}
+
+		else {
+			$object->displayErrors();
+		}
+
+
 		$product = new Product($db);
 		$product->fetch($object->fk_product);
 
@@ -242,13 +277,12 @@ if ($id > 0) {
 		dol_fiche_head($head, 'card', $langs->trans("Training"), 0, $picto);
 
 		$linkback = '<a href="'.dol_buildpath('/formation/list.php', 1).'">'.$langs->trans("BackToList").'</a>';
-		$shownav = 1;
 
 	    $object->next_prev_filter="";
 
 	    $morehtmlstatus = $object->getLibStatut();
 
-	    dol_banner_tab($object, 'id', $linkback, $shownav, 'rowid', 'ref', '', '', 0, '', $morehtmlstatus);
+	    dol_banner_tab($object, 'id', $linkback, 1, 'rowid', 'ref', '<div class="refidno">'.$object->label.'</div>', '', 0, '', $morehtmlstatus);
 
 	    print '<div class="fichecenter">';
 	    print '<div class="fichehalfleft">';
@@ -258,19 +292,23 @@ if ($id > 0) {
 
 	    print '<tr><td class="titlefield">'.$langs->trans('RefTraining');
 	    print '</td>';
-	    print '<td colspan="2">'.$product->getNomUrl(1).'</td></tr>';
+	    print '<td colspan="2">'.$product->getNomUrl(1).' - '.$product->label.'</td></tr>';
 
-	    print '<tr><td class="titlefield">'.$langs->trans('TrainingDate');
+	    print '<tr><td class="titlefield">'.$langs->trans('DateTraining');
 	    print '</td>';
-	    print '<td colspan="2">'.$object->dated.'</td></tr>';
+	    print '<td colspan="2">'.date("d/m/Y", strtotime($object->dated)).'</td></tr>';
 
-	    print '<tr><td class="titlefield">'.$langs->trans('DalayH');
+	    print '<tr><td class="titlefield">'.$langs->trans('DateTrainingFinish');
 	    print '</td>';
-	    print '<td colspan="2">'.$object->delayh.' '.$langs->trans('Hours').'</td></tr>';
+	    print '<td colspan="2">'.date("d/m/Y", strtotime($object->datef)).'</td></tr>';
 
-	    print '<tr><td class="titlefield">'.$langs->trans('DelayD');
+	    print '<tr><td class="titlefield">'.$langs->trans('durationH');
 	    print '</td>';
-	    print '<td colspan="2">'.($object->delayh/5).' '.$langs->trans('Days').'</td></tr>';
+	    print '<td colspan="2">'.number_format($object->duration, 2, ',', '').' '.$langs->trans('Hours').'</td></tr>';
+
+	    print '<tr><td class="titlefield">'.$langs->trans('durationD');
+	    print '</td>';
+	    print '<td colspan="2">'.number_format(($object->duration/7), 2, ',', '').' '.$langs->trans('Days').'</td></tr>';
 
 	    print '</table>';
 
@@ -282,19 +320,19 @@ if ($id > 0) {
 	    print '<table class="border tableforfield" width="100%">';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('PriceP').'</td>';
-	    print '<td colspan="2">'.number_format(($fournPrice->fourn_unitprice*$object->delayh), 2, ',', '').' €</td></tr>';
+	    print '<td colspan="2">'.number_format(($fournPrice->fourn_unitprice*$object->duration), 2, ',', '').' €</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('PriceS').'</td>';
-	    print '<td colspan="2">'.number_format(0, 2, ',', '').' €</td></tr>';
+	    print '<td colspan="2">'.number_format(($salaryCost*$object->duration), 2, ',', '').' €</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('PriceT').'</td>';
-	    print '<td colspan="2">'.number_format((($fournPrice->fourn_unitprice*$object->delayh)+0), 2, ',', '').' €</td></tr>';
+	    print '<td colspan="2">'.number_format((($fournPrice->fourn_unitprice*$object->duration)+($salaryCost*$object->duration)), 2, ',', '').' €</td></tr>';
 
-	    print '<tr><td class="titlefield">'.$langs->trans('Help');
+	    print '<tr><td class="titlefield">'.$langs->trans('HelpOPCA');
 	    print '</td><td colspan="2">'.number_format($object->help, 2, ',', '').' €</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('InCharge').'</td>';
-	    print '<td colspan="2">'.number_format(((($fournPrice->fourn_unitprice*$object->delayh)+0)-$object->help), 2, ',', '').' €</td></tr>';
+	    print '<td colspan="2">'.number_format(((($fournPrice->fourn_unitprice*$object->duration)+($salaryCost*$object->duration))-$object->help), 2, ',', '').' €</td></tr>';
 
 	    print '</table>';
 
@@ -310,7 +348,7 @@ if ($id > 0) {
 
 	    if ($object->fk_product_fournisseur_price) {
 
-	    	if ($object->status <= $object::STATUS_VALIDATED) {
+	    	if ($object->status <= $object::STATUS_PREDICTION) {
 
 			    print '<input type="hidden" name="action" value="editFournPrice">';
 			    print '<tr class="liste_titre nodrag nodrop">';
@@ -363,19 +401,25 @@ if ($id > 0) {
 
 	    print '<div class="tabsAction">';
 
-	    print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=edit">'.$langs->trans('Modify').'</a></div>';
 	    switch ($object->status) {
 	    	case $object::STATUS_DRAFT:
 	    		print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=valid">'.$langs->trans('Validate').'</a></div>';
+	    		print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=edit">'.$langs->trans('Modify').'</a></div>';
 	    		break;
 	    	
 	    	case $object::STATUS_VALIDATED:
 	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=prediction">'.$langs->trans('Predict').'</a></div>';
+	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=edit">'.$langs->trans('Modify').'</a></div>';
 	    		break;
 
 	    	case $object::STATUS_PREDICTION:
+	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=program">'.$langs->trans('Program').'</a></div>';
+	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=edit">'.$langs->trans('Modify').'</a></div>';
+	    		break;
+
+	    	case $object::STATUS_PROGRAM:
+	    		print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=edit">'.$langs->trans('Modify').'</a></div>';
 	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=finish">'.$langs->trans('Finish').'</a></div>';
-	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=unprediction">'.$langs->trans('UnPrediction').'</a></div>';
 	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=cancel">'.$langs->trans('Cancel').'</a></div>';
 	    		break;
 
@@ -394,18 +438,25 @@ if ($id > 0) {
 
 	    print '</div>';
 
-		print '<div class="fichecenter"><div class="fichehalfleft">';
+	    /* Add Collaborators */
 
-		print '<form action="' . $_SERVER["PHP_SELF"] . '?id='.$object->id.'" method="POST"><table class="centpercent notopnoleftnoright">';
+		print '<div class="fichecenter">';
+		print '<div class="fichehalfleft">';
+		print '<form action="' . $_SERVER["PHP_SELF"] . '?id='.$object->id.'" method="POST">';
+		print '<table class="centpercent notopnoleftnoright">';
 		print '<input type="hidden" name="action" value="addUser">';
 		print '<tbody>';
 		print '<tr>';
 		print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$langs->trans('Collaborator').'</div></td>';
-		print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$form->select_dolusers('', 'user', 1, $exclude, 0, '', '', $object->entity, 0, 0, '', 0, '', 'maxwidth300',1).'</div></td>';
-		print '<td class="nobordernopadding" valign="middle"><div class="titre"><input type="submit" class="button" value="'.$langs->trans("Add").'"></div></td>';
+		if ($object->status <= $object::STATUS_PREDICTION) {
+			print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$form->select_dolusers('', 'user', 1, $exclude, 0, '', '', $object->entity, 0, 0, '', 0, '', 'maxwidth300',1).'</div></td>';
+			print '<td class="nobordernopadding" valign="middle"><div class="titre"><input type="submit" class="button" value="'.$langs->trans("Add").'"></div></td>';
+		}
 		print '</tr>';
 		print '</tbody>';
 		print '</table></form>';
+
+		/* End */
 
 		print '<div class="div-table-responsive">';
 		print '<table class="noborder listactions" width="100%"><tbody>';
@@ -413,22 +464,7 @@ if ($id > 0) {
 
 		$users = $object->getUsers();
 
-		if ($users != -1) {
-
-			foreach ($users as $user) {
-
-				$participante = new User($db);
-				$participante->fetch($user['fk_user']);
-
-				print '<tr class="oddeven"><td>'.$participante->getNomUrl(1).'</td>';	
-				print '<td>'.$participante->job.'</td>';	
-				print '<td><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delUser&user='.$participante->id.'"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td></tr>';
-			}
-		}
-
-		else {
-			$object->displayErrors();
-		}
+		print $tabParticipate;
 		
 		print '</tbody></table>';
 		print '</div>';
@@ -456,6 +492,10 @@ if ($id > 0) {
 				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('PredictTraining'), $langs->trans('ConfirmPrediction')." ".$object->ref, 'confirm_prediction', '', 0, 1);
 				print $formconfirm;
 				break;
+			case "program":
+				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ProgramTraining'), $langs->trans('ConfirmProgram')." ".$object->ref, 'confirm_program', '', 0, 1);
+				print $formconfirm;
+				break;
 			case "finish":
 				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('FinishTraining'), $langs->trans('ConfirmFinish')." ".$object->ref, 'confirm_finish', '', 0, 1);
 				print $formconfirm;
@@ -465,16 +505,36 @@ if ($id > 0) {
 				print $formconfirm;
 				break;
 			case "reopen":
-				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ReopenTraining'), $langs->trans('ConfirmReopen')." ".$object->ref, 'confirm_prediction', '', 0, 1);
-				print $formconfirm;
-				break;
-			case 'unprediction':
-				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('UnPredictTraining'), $langs->trans('ConfirmUnpredict')." ".$object->ref, 'confirm_unpredict', '', 0, 1);
+				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('ReopenTraining'), $langs->trans('ConfirmReopen')." ".$object->ref, 'confirm_program', '', 0, 1);
 				print $formconfirm;
 				break;
 		}
 
 	}
+
+
+	/*
+	 * Documents generes
+	 */
+    print '<div class="fichecenter"><div class="fichehalfleft">';
+    print '<a name="builddoc"></a>'; // ancre
+
+    // Documents
+    $modulepart='donation';
+
+    $objectref = dol_sanitizeFileName($object->ref);
+    $relativepath = '/'.$objectref.'.pdf';
+    $filedir = $conf->formation->dir_output . '/' . $objectref;
+    $urlsource=$_SERVER["PHP_SELF"]."?id=".$object->id;
+    $genallowed=$user->rights->formation->write;
+    $delallowed=$user->rights->formation->write;
+
+    print $formfile->showdocuments($modulepart,$object->ref,$filedir,$urlsource,$genallowed,$delallowed,'',0,0,0,28,0,'',0,'',$object->default_lang, '', $object);
+    $somethingshown=$formfile->numoffiles;
+
+    print '</div><div class="fichehalfright"><div class="ficheaddleft">';
+
+    print '</div></div></div>';
 
 	dol_fiche_end();
 }
@@ -493,9 +553,12 @@ else {
 		// Ref new object
 		print '<tr><td class="titlefieldcreate fieldrequired">' . $langs->trans('Ref') . '</td><td>' . $langs->trans("Draft") . '</td></tr>';
 
+		// Label new object
+		print '<tr><td class="titlefieldcreate">' . $langs->trans('Label') . '</td><td><input type=text name="label"></td></tr>';
+
 		// Ref training product
 		print '<tr><td class="titlefieldcreate fieldrequired">' . $langs->trans('RefTraining') . '</td><td>';
-		print $form->select_produits('', 'fk_product', 1,20, 0, 1, 2, '', 1);
+		print $form->select_produits('', 'fk_product', 1,20, 0, 0, 2, '', 1);
 		// reload page to retrieve customer informations
 		if (!empty($conf->global->RELOAD_PAGE_ON_CUSTOMER_CHANGE))
 		{
@@ -512,14 +575,17 @@ else {
 		print '</td></tr>';
 
 		// Durée
-		print '<tr><td class="titlefieldcreate">' . $langs->trans('DalayH') . '</td><td><input type=text name="delayh"></td></tr>';
+		print '<tr><td class="titlefieldcreate">' . $langs->trans('durationH') . '</td><td><input type=text name="duration"></td></tr>';
 
 		// Help
-		print '<tr><td class="titlefieldcreate">' . $langs->trans('Help') . '</td><td><input type=text name="help"></td></tr>';
+		print '<tr><td class="titlefieldcreate">' . $langs->trans('HelpOPCA') . '</td><td><input type=text name="help"></td></tr>';
 
 		// Date
 		print '<tr><td>' . $langs->trans('DateTraining') . '</td><td>';
 		$form->select_date('', 'dated', '', '', '', "addprop", 1, 1);
+		print '</td></tr>';
+		print '<tr><td>' . $langs->trans('DateTrainingFinish') . '</td><td>';
+		$form->select_date('', 'datef', '', '', '', "addprop", 1, 1);
 		print '</td></tr>';
 		print "</table>";
 

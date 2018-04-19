@@ -52,7 +52,7 @@ if ($user->societe_id > 0)
 llxHeader('',$langs->trans('TrainingArea'),'','');
 print load_fiche_titre($langs->trans("TrainingArea"),'','formation@formation');
 
-$sql = " SELECT f.rowid, f.ref, f.fk_statut, f.fk_product";
+$sql = " SELECT f.rowid, f.ref, f.label, f.fk_statut, f.fk_product";
 $sql.= " FROM ".MAIN_DB_PREFIX.$object->table_element." as f";
 $sql.= " WHERE f.fk_statut = ".$object::STATUS_DRAFT;
 
@@ -71,6 +71,7 @@ while ($obj = $db->fetch_object($result)) {
 
 	print '<tr class="oddeven">';
 	print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
+	print '<td align="left" class="nowrap">'.$object->label.'</td>';
 	print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.$product->label.'</a></td>';
 	print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
 	print '</tr>';
@@ -80,7 +81,7 @@ while ($obj = $db->fetch_object($result)) {
 print '</table>';
 print '</div></div>';
 
-$sql = " SELECT f.rowid, f.ref, f.fk_statut, f.fk_product";
+$sql = " SELECT f.rowid, f.ref, f.label, f.fk_statut, f.fk_product";
 $sql.= " FROM ".MAIN_DB_PREFIX.$object->table_element." as f";
 $sql.= " WHERE f.fk_statut = ".$object::STATUS_VALIDATED." OR f.fk_statut = ".$object::STATUS_PREDICTION;
 
@@ -99,6 +100,7 @@ while ($obj = $db->fetch_object($result)) {
 
 	print '<tr class="oddeven">';
 	print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
+	print '<td align="left" class="nowrap">'.$object->label.'</td>';
 	print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.$product->label.'</a></td>';
 	print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
 	print '</tr>';
@@ -107,7 +109,7 @@ while ($obj = $db->fetch_object($result)) {
 
 print '</table><br />';
 
-$sql = " SELECT f.rowid, f.ref, f.fk_statut, f.fk_product";
+$sql = " SELECT f.rowid, f.ref, f.label, f.fk_statut, f.fk_product";
 $sql.= " FROM ".MAIN_DB_PREFIX.$object->table_element." as f";
 $sql.= " WHERE f.fk_statut = ".$object::STATUS_PREDICTION." AND YEAR(f.date_cre)=".date('Y');
 
@@ -125,6 +127,7 @@ while ($obj = $db->fetch_object($result)) {
 
 	print '<tr class="oddeven">';
 	print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
+	print '<td align="left" class="nowrap">'.$object->label.'</td>';
 	print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.$product->label.'</a></td>';
 	print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
 	print '</tr>';

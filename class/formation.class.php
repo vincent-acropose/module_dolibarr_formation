@@ -12,24 +12,28 @@ class Formation extends CommonObject
 
 	public $id;
 	public $ref;
+	public $label;
 	public $fk_product;
 	public $dated;
+	public $datef;
 	public $help;
-	public $delayh = 0;
+	public $duration = 0;
 	public $fk_product_fournisseur_price;
 
 	// Statut
 	const STATUS_DRAFT = 0;
 	const STATUS_VALIDATED = 1;
 	const STATUS_PREDICTION = 2;
-	const STATUS_FINISH = 3;
-	const STATUS_CANCEL = 4;
+	const STATUS_PROGRAM = 3;
+	const STATUS_FINISH = 4;
+	const STATUS_CANCEL = 5;
 	
 	// Statut Array
 	public static $TStatus = array(
 		self::STATUS_DRAFT => 'Draft'
 		,self::STATUS_VALIDATED => 'Validate'
 		,self::STATUS_PREDICTION => 'Prediction'
+		,self::STATUS_PROGRAM => 'Program'
 		,self::STATUS_FINISH => 'Finish'
 		,self::STATUS_CANCEL => 'Cancel'
 	);
@@ -136,22 +140,39 @@ class Formation extends CommonObject
 			}
 
 			if (!empty($value['dated'])) {
-				/*if (preg_match('#^[0-9]+/[0-9]+/[0-9]+$#', $value['dated'])) {
-					$date = explode("/", $value['dated']);
-					$this->dated = $date[2]."-".$date[1]."-".$date[0];
-				}*/
-				$this->dated = $value['datedyear']."-".$value['datedmonth']."-".$value['datedday'];
+				if (sizeof(explode("/", $value['dated']) > 2)) {
+					$dated = explode("/", $value['dated'])[2]."-".explode("/", $value['dated'])[1]."-".explode("/", $value['dated'])[0];
+				}
+				else {
+					$dated = $value['dated'];
+				}
+				$this->dated = date("Y-m-d", strtotime($dated));
+			}
+
+			if (!empty($value['datef'])) {
+				if (sizeof(explode("/", $value['datef']) > 2)) {
+					$datef = explode("/", $value['datef'])[2]."-".explode("/", $value['datef'])[1]."-".explode("/", $value['datef'])[0];
+				}
+				else {
+					$dated = $value['datef'];
+				}
+				$this->datef = date("Y-m-d", strtotime($datef));
 			}
 
 			if (!empty($value['ref'])) {
 				$this->ref = $value['ref'];
 			}
+
+			if (!empty($value['label'])) {
+				$this->label = $value['label'];
+			}
+
 			if (!empty($value['id'])) {
 				$this->id = $value['id'];
 			}
 
-			if (!empty($value['delayh'])) {
-				$this->delayh = $value['delayh'];
+			if (!empty($value['duration'])) {
+				$this->duration = $value['duration'];
 			}
 
 			if (!empty($value['help'])) {
@@ -187,11 +208,21 @@ class Formation extends CommonObject
 	}
 
 	public function setPredict() {
-		if ($this->fk_product_fournisseur_price > 0) {
-			$this->status = self::STATUS_PREDICTION;
+		$this->status = self::STATUS_PREDICTION;
+
+		return $this->save();
+	}
+
+	public function setProgram()
+	{
+		if ($this->fk_product_fournisseur_price == 0) {
+			$this->errors = "Une erreur est survenu lors de la programmation de la fromation: Aucun tarif n'a été défini";
+		}
+		elseif ($this->getUsers()->num_rows == 0) {
+			$this->errors = "Une erreur est survenu lors de la programmation de la fromation: Aucun collaborateur n'a été ajouté";
 		}
 		else {
-			$this->errors = "Une erreur est survenu lors de la prévision de la fromation: Aucun tarif n'a été défini";
+			$this->status = self::STATUS_PROGRAM;
 		}
 
 		return $this->save();
@@ -217,10 +248,15 @@ class Formation extends CommonObject
 	public function create()
 	{
 		$this->setNextId();
-
 		$this->ref = "(PROV".$this->id.")";
+		$product = new Product($this->db);
+		$product->fetch($this->fk_product);
 
-		$trainingCreate = $this->request('INSERT INTO '.MAIN_DB_PREFIX.$this->table_element.' (rowid, ref, date_cre, date_maj, fk_product, fk_statut, dated, delayh, help) VALUES ('.(int)$this->id.', "'.$this->ref.'", NOW(), NOW(), '.$this->fk_product.', '.$this->status.', "'.$this->dated.'", '.$this->delayh.', '.(float)$this->help.')', 1);
+		if (!$this->duration && $product->duration) {
+			$this->duration = explode("h", $product->duration)[0];
+		}
+
+		$trainingCreate = $this->request('INSERT INTO '.MAIN_DB_PREFIX.$this->table_element.' (rowid, ref, label, date_cre, date_maj, fk_product, fk_statut, dated, datef, duration, help) VALUES ('.(int)$this->id.', "'.$this->ref.'", "'.$this->label.'", NOW(), NOW(), '.$this->fk_product.', '.$this->status.', "'.$this->dated.'", "'.$this->datef.'", '.$this->duration.', '.(float)$this->help.')', 1);
 
 		if ($trainingCreate) {
 			return 0;
@@ -236,18 +272,23 @@ class Formation extends CommonObject
 		$param = [];
 		$param['fk_product'] = $this->fk_product;
 		$param['dated'] = $this->dated;
+		$param['datef'] = $this->datef;
 		$param['help'] = $this->help;
-		$param['delayh'] = $this->delayh;
+		$param['duration'] = $this->duration;
 
 		$newForm = new Formation($this->db);
 		$newForm->set_values($param);
 
-		$newForm->save("create");
+		$newForm->create();
 
 		return $newForm;
 	}
 
 	public function delete() {
+		if ($this->fk_product_fournisseur_price) {
+			$trainingDelete = $this->request("DELETE FROM ".MAIN_DB_PREFIX.$this->table_link_user." WHERE fk_formation=".$this->id, 1);
+		}
+
 		$trainingDelete = $this->request("DELETE FROM ".MAIN_DB_PREFIX.$this->table_element." WHERE rowid=".$this->id, 1);
 
 		return $trainingDelete;
@@ -353,10 +394,12 @@ class Formation extends CommonObject
 
 		$sql = "UPDATE ".MAIN_DB_PREFIX.$this->table_element;
 		$sql .=" SET ref='".$this->ref."'";
+		$sql .= ", label='".$this->label."'";
 		$sql .= ", fk_statut=".$this->status;
 		$sql .= ", dated='".$this->dated."'";
+		$sql .= ", datef='".$this->datef."'";
 		$sql .= ", help=".$this->help;
-		$sql .= ", delayh=".$this->delayh;
+		$sql .= ", duration=".$this->duration;
 		$sql .= ", fk_product=".$this->fk_product;
 		if ($this->fk_product_fournisseur_price) $sql .= ", fk_product_fournisseur_price=".$this->fk_product_fournisseur_price;
 		$sql .= ", date_maj=NOW() WHERE rowid=".$this->id;
@@ -421,7 +464,7 @@ class Formation extends CommonObject
 
 	function fetch($id)
 	{
-		$sql = " SELECT f.rowid, f.ref, f.date_cre, f.dated, f.help, f.fk_statut, f.fk_product, f.delayh, f.fk_product_fournisseur_price";
+		$sql = " SELECT f.rowid, f.ref, f.label, f.date_cre, f.dated, f.datef, f.help, f.fk_statut, f.fk_product, f.duration, f.fk_product_fournisseur_price";
 		$sql.= " FROM ".MAIN_DB_PREFIX.$this->table_element." as f";
 		$sql.= " WHERE f.rowid=".$id;
 		$res = $this->db->query($sql);
@@ -431,12 +474,14 @@ class Formation extends CommonObject
 
 			$this->id = $obj->rowid;
 			$this->ref = $obj->ref;
+			$this->label = $obj->label;
 			$this->date_cre = $obj->date_cre;
-			$this->dated = explode('-', $obj->dated)[2]."/".explode('-', $obj->dated)[1]."/".explode('-', $obj->dated)[0];
+			$this->dated = $obj->dated;
+			$this->datef = $obj->datef;
 			$this->status = $obj->fk_statut;
 			$this->fk_product = $obj->fk_product;
 			$this->help = $obj->help;
-			$this->delayh = $obj->delayh;
+			$this->duration = $obj->duration;
 			$this->fk_product_fournisseur_price = $obj->fk_product_fournisseur_price;
 			return 1;
 		}
@@ -457,6 +502,7 @@ class Formation extends CommonObject
 		if ($status==self::STATUS_DRAFT) { $statustrans='statut0'; $keytrans='formationStatusDraft'; $shortkeytrans='Draft'; }
 		if ($status==self::STATUS_VALIDATED) { $statustrans='statut1'; $keytrans='formationStatusValidated'; $shortkeytrans='Validate'; }
 		if ($status==self::STATUS_PREDICTION) { $statustrans='statut3'; $keytrans='formationStatusPrediction'; $shortkeytrans='Prediction'; }
+		if ($status==self::STATUS_PROGRAM) { $statustrans='statut3'; $keytrans='formationStatusProgram'; $shortkeytrans='Program'; }
 		if ($status==self::STATUS_FINISH) { $statustrans='statut4'; $keytrans='formationStatusFinish'; $shortkeytrans='Finish'; }
 		if ($status==self::STATUS_CANCEL) { $statustrans='statut9'; $keytrans='formationStatusCancel'; $shortkeytrans='Cancel'; }
 

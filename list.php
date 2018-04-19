@@ -40,11 +40,14 @@ llxHeader('',$langs->trans('formationList'),'','');
 //if (empty($user->rights->formation->all->read)) $type = 'mine';
 
 // TODO ajouter les champs de son objet que l'on souhaite afficher
-$sql = 'SELECT t.rowid, t.ref, t.dated, t.fk_statut';
+$sql = 'SELECT t.rowid, t.ref, t.label, t.dated, t.fk_statut';
 $sql.= ' FROM '.MAIN_DB_PREFIX.'formation t ';
 
 //$sql.= ' AND t.entity IN ('.getEntity('formation', 1).')';
 //if ($type == 'mine') $sql.= ' AND t.fk_user = '.$user->id;
+
+$formcore = new TFormCore($_SERVER['PHP_SELF'], 'form_list_mymodule', 'GET');
+$nbLine = !empty($user->conf->MAIN_SIZE_LISTE_LIMIT) ? $user->conf->MAIN_SIZE_LISTE_LIMIT : $conf->global->MAIN_SIZE_LISTE_LIMIT;
 
 $r = new TListviewTBS('formation');
 echo $r->render($PDOdb, $sql, array(
@@ -59,6 +62,9 @@ echo $r->render($PDOdb, $sql, array(
 		'dated' => 'date' // [datetime], [hour], [money], [number], [integer]
 	)
 	,'search' => array(
+		'ref' => array('recherche' => true, 'table' => 't', 'field' => 'ref')
+		,'label' => array('recherche' => true, 'table' => 't', 'field' => 'label')
+		,'fk_statut' => array('recherche' => Formation::$TStatus, 'to_translate' => true)
 	)
 	,'translate' => array()
 	,'hide' => array(
@@ -75,7 +81,8 @@ echo $r->render($PDOdb, $sql, array(
 	)
 	,'title'=>array(
 		'ref' => $langs->trans('Ref.')
-		,'dated' => $langs->trans('begin')
+		,'label' => $langs->trans('Label')
+		,'dated' => $langs->trans('DateTraining')
 		,'fk_statut' => $langs->trans('Status')
 	)
 	,'eval'=>array(
@@ -83,6 +90,8 @@ echo $r->render($PDOdb, $sql, array(
 		,'fk_statut' => '_getStatus(@val@)'
 	)
 ));
+
+$formcore->end_form();
 
 llxFooter('');
 
