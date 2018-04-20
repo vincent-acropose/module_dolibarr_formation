@@ -63,6 +63,7 @@ durationD = Durée (Jours)
 Collaborator = Collaborateurs
 NoParticipate=Aucun Collaborateur
 Place=Lieu
+AddNewSupplier=Ajouter Prix Fournisseur à la volée
 
 # CARD TPL
 Save=Enregistrer

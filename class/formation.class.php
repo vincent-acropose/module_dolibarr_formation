@@ -3,6 +3,7 @@
 require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/productbatch.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/stock/class/entrepot.class.php';
+require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.class.php';
 
 class Formation extends CommonObject
 {
@@ -403,6 +404,26 @@ class Formation extends CommonObject
 		}
 		else {
 			$this->errors = 'Une erreur est survenu lors de l\'ajout d\'un prix fournisseur: Aucun prix choisi';
+			return -1;
+		}
+
+	}
+
+	public function newFournPrice($param) {
+
+		$productPrice = new Product($this->db);
+		$productPrice->fetch($this->fk_product);
+
+		$supplierPrice = new Fournisseur($this->db);
+		$supplierPrice->fetch($param['supplierId']);
+
+		$request = $this->request("INSERT INTO llx_product_fournisseur_price (datec, fk_product, fk_soc, ref_fourn, price, quantity, fk_availability, tva_tx) VALUES (NOW(), ".$this->fk_product.", ".$param['supplierId'].", '".$supplierPrice->code_fournisseur."-".$productPrice->label."', ".(int)$param['newSupplierPrice'].", 1, 1, ".(int)$param['tva_tx'].")", 1);
+
+		if ($request) {
+			return 0;
+		}
+		else {
+			$this->errors = 'Une erreur est survenu lors de la sauvegarde du nouveau prix fournisseur';
 			return -1;
 		}
 

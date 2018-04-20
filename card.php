@@ -196,8 +196,8 @@ if (empty($reshook))
 		    }
 
 		    if ($convocation) {
-	        	foreach ($users as $user) {
-	        		$recipient->fetch($user['fk_user']);
+	        	foreach ($users as $userId) {
+	        		$recipient->fetch($userId['fk_user']);
 
 	        		$object->mail = str_replace("[prenom]", $recipient->firstname, $object->mail);
 	        		$object->mail = str_replace("[nom]", $recipient->lastname, $object->mail);
@@ -211,6 +211,18 @@ if (empty($reshook))
 	        }
 	        else {
 	        	$object->errors = "Aucune convocation n'a été ajoutée.";
+	        }
+
+        	break;
+
+        case 'newFournPrice':
+	        if (!empty($_REQUEST['newSupplierPrice']) && !empty($_REQUEST['supplierId']) && !empty($_REQUEST['tva_tx'])) {
+	        	if ($object->newFournPrice($_REQUEST) != -1) {
+	        		header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
+	        	}
+	        }
+	        else {
+	        	$object->errors = "Une erreur est survenu lors de l'ajout d\'un nouveau prix fournisseur: Aucun prix ou fournisseur ou tva n'est indiqué";
 	        }
 
         	break;
@@ -314,10 +326,10 @@ if ($id > 0) {
 			$tabParticipate = "";
 			$salaryCost = 0;
 
-			foreach ($users as $user) {
+			foreach ($users as $userId) {
 
 				$participante = new User($db);
-				$participante->fetch($user['fk_user']);
+				$participante->fetch($userId['fk_user']);
 
 				$salaryCost += (float)$participante->array_options['options_salaire'];
 
@@ -453,8 +465,19 @@ if ($id > 0) {
 		    print '<tr class="liste_titre nodrag nodrop">';
 		    print '<td class="linecoldescription">'.$langs->trans('AddSupplier').'</td>';
 		    $fournisseur = $form->select_produits_fournisseurs_list(0, "", "fourn_price_id", "", "", $product->ref);
-			print '<td class="linecoldescription">'.$fournisseur."</td>";
-		    print '<td class="linecoldescription" colspan="2"><input type="submit" class="button" value="' . $langs->trans("Add") . '"></td>';
+			print '<td class="linecoldescription" colspan="2">'.$fournisseur."</td>";
+		    print '<td class="linecoldescription left" colspan="2"><input type="submit" class="button" value="' . $langs->trans("Add") . '"></td>';
+			print '</tr>';
+			print '</form>';
+
+			print '<form action="' . $_SERVER["PHP_SELF"] . '?id='.$object->id.'" method="POST">';
+			print '<input type="hidden" name="action" value="newFournPrice">';
+			print '<tr class="liste_titre nodrag nodrop">';
+		    print '<td class="linecoldescription">'.$langs->trans('AddNewSupplier').'</td>';
+		    print '<td class="linecoldescription">'.$form->select_thirdparty_list("", "supplierId", "s.code_fournisseur IS NOT NULL")."</td>";
+		    print '<td class="linecoldescription"><input type="text" name="newSupplierPrice" placeholder="Nouveau prix"></td>';
+		    print '<td class="linecoldescription"><input type="text" name="tva_tx" placeholder="TVA"></td>';
+		    print '<td class="linecoldescription"><input type="submit" class="button" value="' . $langs->trans("Create") . '"></td>';
 			print '</tr>';
 			print '</form>';
 
