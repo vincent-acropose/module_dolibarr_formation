@@ -66,6 +66,11 @@ if (empty($reshook)) {
                 $fichier = basename($_FILES['uploadfile']['name']);
 
                 if(move_uploaded_file($_FILES['uploadfile']['tmp_name'], $upload_dir.'/'.$object->ref.'_'.$fichier)) {
+
+                    $eventLabel = $fichier." Ajouté à la formation ".$object->ref." par ".$user->login;
+                    $eventNote = "Le fichier ".$fichier." a été ajouté par ".$user->firstname." ".$user->lastname;
+                    $object->addEvent($user->id, $eventLabel, $eventNote);
+
                     header('Location: '.dol_buildpath('/formation/document.php', 1).'?id='.$object->id);
                 }
                 else {
@@ -76,6 +81,10 @@ if (empty($reshook)) {
 
         case 'delfile':
             if (unlink($upload_dir.'/'.$document)) {
+                $eventLabel = $fichier." Supprimé de la formation ".$object->ref." par ".$user->login;
+                $eventNote = "Le fichier ".$fichier." a été supprimé par ".$user->firstname." ".$user->lastname;
+                $object->addEvent($user->id, $eventLabel, $eventNote);
+
                 header('Location: '.dol_buildpath('/formation/document.php', 1).'?id='.$object->id);
             }
             else {

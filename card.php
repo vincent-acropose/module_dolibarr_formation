@@ -72,9 +72,21 @@ if (empty($reshook))
 			if (GETPOST('edit') == "edit") {
 				if ($object->status == $object::STATUS_PROGRAM) {
 					$object->status = $object::STATUS_PREDICTION;
+
+					$eventLabel = "Formation ".$object->ref." Déprogrammé";
+					$eventNote = "La formation ".$object->ref." a été déprogrammée par ".$user->login;
+					$object->addEvent($user->id, $eventLabel, $eventNote);
+
 				}
 				$object->set_values($_REQUEST); // Set standard attributes
-				$object->save();
+				
+				if ($object->save() != -1) {
+
+					$eventLabel = "Formation ".$object->ref." Editée";
+					$eventNote = "La formation a été modifier par ".$user->login;
+					$object->addEvent($user->id, $eventLabel, $eventNote);
+
+				}
 
 				if (empty($object->errors)) {
 					header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
@@ -85,22 +97,43 @@ if (empty($reshook))
 			break;
 
 		case 'addUser':
-			$addUser = GETPOST('user');
 
-			$object->addUser($addUser);
+			$newUser = new User($db);
+			$newUser->fetch(GETPOST('user'));
+
+			if($object->addUser($newUser->id) != -1) {
+
+				$eventLabel = $newUser->login." Ajouté(e) à la formation ".$object->ref;
+				$eventNote = $newUser->firstname." ".$newUser->lastname." a été ajouté(e) à la formation par ".$user->id;
+				$object->addEvent($user->id, $eventLabel, $eventNote);
+
+			}
 
 			if (empty($object->errors)) {
 				header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
-				exit();
+				exit;
 			}
 			
 			break;
 
 		case 'delUser':
-			$object->delUser(GETPOST('user'));
 
-			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
-			exit;
+			$oldUser = new User($db);
+			$oldUser->fetch(GETPOST('user'));
+
+			if($object->delUser($oldUser->id) != -1) {
+
+				$eventLabel = $oldUser->login." Supprimé(e) de la formation ".$object->ref;
+				$eventNote = $oldUser->firstname." ".$oldUser->lastname." a été supprimé(e) de la formation par ".$user->id;
+				$object->addEvent($user->id, $eventLabel, $eventNote);
+
+			}
+
+			if (empty($object->errors)) {
+				header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
+				exit;
+			}
+
 			break;
 
 		case 'addFournPrice':
@@ -128,36 +161,85 @@ if (empty($reshook))
 			break;
 
 		case 'confirm_clone':
-			if (!empty($user->rights->formation->write)) $clone = $object->clone();
+			if (!empty($user->rights->formation->write)) {
+				if ($clone = $object->clone() != -1) {
+
+					$eventLabel = "Formation créé depuis ".$object->ref."";
+					$eventNote = "La formation ".$clone->ref." a été créé par ".$user->login." depuis la fromation ".$object->ref;
+					$clone->addEvent($user->id, $eventLabel, $eventNote);
+
+				}
+
+				if (empty($clone->errors)) {
+					header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$clone->id);
+					exit;
+				}
+			}
+			break;
 
 			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$clone->id);
 			exit;
 			break;
-		case 'confirm_valid':
-			if (!empty($user->rights->formation->write)) $object->setValid();
 
-			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
-			exit;
+		case 'confirm_valid':
+			if (!empty($user->rights->formation->write)) {
+
+				if ($object->setValid() != -1) {
+
+					$eventLabel = "Formation ".$object->ref." Validée";
+					$eventNote = "La formation ".$object->ref." a été validée par ".$user->login;
+					$object->addEvent($user->id, $eventLabel, $eventNote);
+
+				}
+
+				if (empty($object->errors)) {
+					header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
+					exit;
+				}
+			}
 			break;
+
 		case 'confirm_delete':
 			if (!empty($user->rights->formation->write)) $object->delete();
 			
 			header('Location: '.dol_buildpath('/formation/list.php', 1));
 			exit;
 			break;
-		case 'confirm_prediction':
-			if (!empty($user->rights->formation->write)) $object->setPredict();
 
-			header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
-			exit();
+		case 'confirm_prediction':
+			if (!empty($user->rights->formation->write)) {
+				if ($object->setPredict() != -1) {
+
+					$eventLabel = "Formation ".$object->ref." Prévue";
+					$eventNote = "La formation ".$object->ref." a été ajoutée au prévisionnelle par ".$user->login;
+					$object->addEvent($user->id, $eventLabel, $eventNote);
+
+				}
+
+				if (empty($object->errors)) {
+					header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
+					exit;
+				}
+
+			}
 			break;
 
 		case 'confirm_program':
-			if (!empty($user->rights->formation->write)) $object->setProgram();
+			if (!empty($user->rights->formation->write)) {
 
-			if (empty($object->errors)) {
-				header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
-				exit();
+				if ($object->setProgram() != -1) {
+
+					$eventLabel = "Formation ".$object->ref." Programmé";
+					$eventNote = "La formation ".$object->ref." a été programmée par ".$user->login;
+					$object->addEvent($user->id, $eventLabel, $eventNote);
+
+				}
+
+				if (empty($object->errors)) {
+					header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
+					exit;
+				}
+
 			}
 			break;
 
@@ -176,6 +258,11 @@ if (empty($reshook))
 
 		case 'delfile':
             if (unlink($upload_dir.'/'.$document)) {
+            	
+            	$eventLabel = $fichier." Supprimé de la formation ".$object->ref." par ".$user->login;
+                $eventNote = "Le fichier ".$fichier." a été supprimé par ".$user->firstname." ".$user->lastname;
+                $object->addEvent($user->id, $eventLabel, $eventNote);
+
                 header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
             }
             else {
@@ -206,6 +293,10 @@ if (empty($reshook))
 					$mailfile = new CMailFile("Convocation ".$object->label, $recipient->email, "info@dolibarr.com", $object->mail, [$convocation['fullname']], ['application/pdf'], ['Convocation '.$object->label.".pdf"], "", "", 0, 1);
 					$mailfile->sendfile();
 	        	}
+
+	        	$eventLabel = "Mail envoyé aux collaborateurs";
+				$eventNote = "La convocation à été envoyé aux collaborateurs par ".$user->login;
+				$object->addEvent($user->id, $eventLabel, $eventNote);
 
 	        	header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
 	        }
@@ -560,6 +651,8 @@ if ($id > 0) {
 
 		/* End */
 
+		/* Show Collaborateur */
+
 		print '<div class="div-table-responsive">';
 		print '<table class="noborder listactions" width="100%"><tbody>';
 		print '<tr class="liste_titre"><th class="liste_titre">Utilisateur</th><th class="liste_titre">Poste</th><th></th></tr>';
@@ -567,17 +660,12 @@ if ($id > 0) {
 		print $tabParticipate;
 		
 		print '</tbody></table>';
-		print '</div>';
 
-		print '</div></div>';	
-
-	    print '<div class="clearboth"></div>';
-	    print '<br /><br />';
+	    /* End */
 
 	    /* Show documents */
 
-	    print '<div class="fichecenter"><div class="fichehalfleft">';
-	    print '<table class="centpercent notopnoleftnoright" style="margin-bottom: 2px;"><tbody>';
+	    print '<table class="centpercent notopnoleftnoright" style="margin-top: 20px;"><tbody>';
 	    print '<tr>';
 	    print '<td class="nobordernopadding widthpictotitle" valign="middle"><img src="/dolibarr/htdocs/theme/eldy/img/title_generic.png" alt="" title="" class="valignmiddle" id="pictotitle"></td>';
 	    print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$langs->trans('joinFile').'</div></td>';
@@ -645,8 +733,27 @@ if ($id > 0) {
 	    }
 
 	    print '</tbody></table>';
+
 	    print '</div>';
 	    print '</div></div>';
+
+	    /* End */
+
+		/* List of actions on element */
+
+		print '<div class="fichehalfright">';
+		print '<div class="ficheaddleft">';
+
+        include_once DOL_DOCUMENT_ROOT.'/core/class/html.formactions.class.php';
+        $formactions=new FormActions($db);
+        $somethingshown=$formactions->showactions($object,'formation');
+
+        print '</div>';
+        print '</div>';
+
+        print '</div>';
+
+        /* End */
 
 	    switch ($action) {
 			case "valid":
@@ -686,8 +793,6 @@ if ($id > 0) {
 		}
 
 	}
-
-    /* End */
 
 	dol_fiche_end();
 }

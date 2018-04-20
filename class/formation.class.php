@@ -7,7 +7,6 @@ require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.class.php';
 
 class Formation extends CommonObject
 {
-
 	public $table_element='formation';
 	public $table_link_user='formation_users';
 	public $table_conf='formation_conf';
@@ -223,6 +222,7 @@ class Formation extends CommonObject
 		$this->status = self::STATUS_VALIDATED;
 
 		return $this->save();
+		
 	}
 
 	public function setPredict() {
@@ -235,9 +235,11 @@ class Formation extends CommonObject
 	{
 		if ($this->fk_product_fournisseur_price == 0) {
 			$this->errors = "Une erreur est survenu lors de la programmation de la fromation: Aucun tarif n'a été défini";
+			return -1;
 		}
 		elseif ($this->getUsers()->num_rows == 0) {
 			$this->errors = "Une erreur est survenu lors de la programmation de la fromation: Aucun collaborateur n'a été ajouté";
+			return -1;
 		}
 		else {
 			$this->status = self::STATUS_PROGRAM;
@@ -328,6 +330,7 @@ class Formation extends CommonObject
 			$trainingDelete = $this->request("DELETE FROM ".MAIN_DB_PREFIX.$this->table_link_user." WHERE fk_formation=".$this->id, 1);
 		}
 
+		$this->request("DELETE FROM ".MAIN_DB_PREFIX."actioncomm WHERE fk_element=".$this->id, 1);
 		$trainingDelete = $this->request("DELETE FROM ".MAIN_DB_PREFIX.$this->table_element." WHERE rowid=".$this->id, 1);
 
 		return $trainingDelete;
@@ -374,12 +377,12 @@ class Formation extends CommonObject
 
 			$delUser = $this->request("DELETE FROM ".MAIN_DB_PREFIX.$this->table_link_user." WHERE fk_user=".$id." AND fk_formation=".$this->id, 1);
 
-			if ($this->db->query($delUser)) {
+			if ($delUser) {
 				return 0;
 			}
 
 			else {
-				$this->errors = 'Une erreur est survenu lors de l\'ajout d\'un collaborateur';
+				$this->errors = 'Une erreur est survenu lors de la suppression d\'un collaborateur';
 				return -1;
 			}
 		}
@@ -590,6 +593,36 @@ class Formation extends CommonObject
                 break;
         }
         return $image;
+	}
+
+	function addEvent($userId, $label="", $note="", $fk_action=40) {
+
+		$sql = "INSERT INTO ".MAIN_DB_PREFIX."actioncomm (datep, datep2, fk_action, code, label, datec, fk_user_author, fk_parent, fk_user_action, transparency, priority, percent, location, note, fk_element, elementtype) VALUES (";
+		$sql .= "NOW() ,";
+		$sql .= "NOW() ,";
+		$sql .= $fk_action." ,";
+		$sql .= "'AC_OTH_AUTO' ,";
+		$sql .= "'".$label."' ,";
+		$sql .= "NOW() ,";
+		$sql .= $userId." ,";
+		$sql .= "0 ,";
+		$sql .= $userId." ,";
+		$sql .= "0 ,";
+		$sql .= "0 ,";
+		$sql .= "-1 ,";
+		$sql .= "'' ,";
+		$sql .= "'".$note."' ,";
+		$sql .= $this->id." ,";
+		$sql .= "'formation'";
+		$sql .= ")";
+
+		if ($this->request($sql, 1)) {
+			return 0;
+		}
+		else {
+			$this->errors = "Erreur lors de l'insertion de l'évènement";
+			return -1;
+		}
 	}
 
 	/* ----------------------------- */
