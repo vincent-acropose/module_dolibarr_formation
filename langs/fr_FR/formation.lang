@@ -12,11 +12,18 @@ formation=Formation
 Showformation=Afficher formation
 Totalht=Total HT
 
+# STATS
+StatisticsOfTraining=Statistiques des formations
+TrainingCost=Coût Total de formation
+CollabCost=Coût Salariale Total
+TotalCost=Coût Total
+
 # MENU
 formationMenu=Formation
 TopMenuformation=Formation
 LeftMenuformationCreate=Nouvelle formation
 LeftMenuformationList=Liste
+LeftMenuformationStat=Statistiques
 
 # STATUS
 formationStatusDraft=Brouillon (à valider)

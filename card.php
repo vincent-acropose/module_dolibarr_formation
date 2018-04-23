@@ -5,9 +5,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/functions.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/images.lib.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.form.class.php';
-require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.class.php';
-require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
 dol_include_once('/formation/class/formation.class.php');
@@ -34,12 +32,10 @@ $object = new Formation($db);
 if (!empty($id)) $object->fetch($id);
 
 if ($object->fk_product_fournisseur_price) {
-	$fournPrice = new ProductFournisseur($db);
-	$fournPrice->fetch_product_fournisseur_price($object->fk_product_fournisseur_price);
-
 	$fournisseur = new Fournisseur($db);
-	$fournisseur->fetch($fournPrice->fourn_id);
+	$fournisseur->fetch($object->fk_product_fournisseur_price->fourn_id);
 }
+
 $filearray=dol_dir_list($upload_dir,"files",0,'','(\.meta|_preview.*\.png)$',"","",1);
 $hookmanager->initHooks(array('formationcard', 'globalcard'));
 
@@ -271,8 +267,7 @@ if (empty($reshook))
             break;
 
         case 'sendMail':
-        	$users = $object->getUsers();
-        	$recipient = new User($db);
+        	$users = $object->users;
         	$convocation = false;
 
 		    foreach($filearray as $key => $file) {
@@ -283,9 +278,7 @@ if (empty($reshook))
 		    }
 
 		    if ($convocation) {
-	        	foreach ($users as $userId) {
-	        		$recipient->fetch($userId['fk_user']);
-
+	        	foreach ($users as $user) {
 	        		$object->mail = str_replace("[prenom]", $recipient->firstname, $object->mail);
 	        		$object->mail = str_replace("[nom]", $recipient->lastname, $object->mail);
 	        		$object->mail = str_replace("[libelle]", $object->label, $object->mail);
@@ -350,7 +343,7 @@ if ($id > 0) {
 		print '<tr><td class="titlefieldcreate">' . $langs->trans('Label') . '</td><td><input type=text name="label" value=' . $object->label . '></td></tr>';
 		// Ref training product
 		print '<tr><td class="titlefieldcreate fieldrequired">' . $langs->trans('RefTraining') . '</td><td>';
-		print $form->select_produits($object->fk_product, 'fk_product', 1,20, 0, 1, 2, '', 1);
+		print $form->select_produits($object->fk_product->id, 'fk_product', 1,20, 0, 1, 2, '', 1);
 		// reload page to retrieve customer informations
 		if (!empty($conf->global->RELOAD_PAGE_ON_CUSTOMER_CHANGE))
 		{
@@ -409,24 +402,15 @@ if ($id > 0) {
 
 	else {
 
-		// Gestion des participants à la formation
-		$users = $object->getUsers();
-
-		if ($users != -1 && $users->num_rows > 0) {
+		if (!empty($object->users)) {
 
 			$tabParticipate = "";
-			$salaryCost = 0;
 
-			foreach ($users as $userId) {
+			foreach ($object->users as $user) {
 
-				$participante = new User($db);
-				$participante->fetch($userId['fk_user']);
-
-				$salaryCost += (float)$participante->array_options['options_salaire'];
-
-				$tabParticipate .= '<tr class="oddeven"><td>'.$participante->getNomUrl(1).'</td>';	
-				$tabParticipate .= '<td>'.$participante->job.'</td>';	
-				if ($object->status < $object::STATUS_PROGRAM) $tabParticipate .= '<td><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delUser&user='.$participante->id.'"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td>';
+				$tabParticipate .= '<tr class="oddeven"><td>'.$user->getNomUrl(1).'</td>';	
+				$tabParticipate .= '<td>'.$user->job.'</td>';	
+				if ($object->status < $object::STATUS_PROGRAM) $tabParticipate .= '<td><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delUser&user='.$user->id.'"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td>';
 
 			}
 		}
@@ -439,9 +423,6 @@ if ($id > 0) {
 			$object->displayErrors();
 		}
 
-
-		$product = new Product($db);
-		$product->fetch($object->fk_product);
 
 		$head = formation_prepare_head($object);
 		$picto = 'formation@formation';
@@ -463,7 +444,7 @@ if ($id > 0) {
 
 	    print '<tr><td class="titlefield">'.$langs->trans('RefTraining');
 	    print '</td>';
-	    print '<td colspan="2">'.$product->getNomUrl(1).' - '.$product->label.'</td></tr>';
+	    print '<td colspan="2">'.$object->fk_product->getNomUrl(1).' - '.$object->fk_product->label.'</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('DateTraining');
 	    print '</td>';
@@ -495,19 +476,19 @@ if ($id > 0) {
 	    print '<table class="border tableforfield" width="100%">';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('PriceP').'</td>';
-	    print '<td colspan="2">'.number_format(($fournPrice->fourn_unitprice*$object->duration), 2, ',', '').' €</td></tr>';
+	    print '<td colspan="2">'.number_format($object->total_ht, 2, ',', '').' €</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('PriceS').'</td>';
-	    print '<td colspan="2">'.number_format(($salaryCost*$object->duration), 2, ',', '').' €</td></tr>';
+	    print '<td colspan="2">'.number_format($object->total_salariale, 2, ',', '').' €</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('PriceT').'</td>';
-	    print '<td colspan="2">'.number_format((($fournPrice->fourn_unitprice*$object->duration)+($salaryCost*$object->duration)), 2, ',', '').' €</td></tr>';
+	    print '<td colspan="2">'.number_format($object->total_salariale+$object->total_ht, 2, ',', '').' €</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('HelpOPCA');
 	    print '</td><td colspan="2">'.number_format($object->help, 2, ',', '').' €</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('InCharge').'</td>';
-	    print '<td colspan="2">'.number_format(((($fournPrice->fourn_unitprice*$object->duration)+($salaryCost*$object->duration))-$object->help), 2, ',', '').' €</td></tr>';
+	    print '<td colspan="2">'.number_format($object->total_reste, 2, ',', '').' €</td></tr>';
 
 	    print '</table>';
 
@@ -528,7 +509,7 @@ if ($id > 0) {
 			    print '<input type="hidden" name="action" value="editFournPrice">';
 			    print '<tr class="liste_titre nodrag nodrop">';
 			    print '<td class="linecoldescription">'.$langs->trans('EditSupplier').'</td>';
-				print '<td class="linecoldescription">'.$form->select_produits_fournisseurs_list(0, "", "fourn_price_id", "", "", $product->ref).'</td>';
+				print '<td class="linecoldescription">'.$form->select_produits_fournisseurs_list(0, "", "fourn_price_id", "", "", $object->fk_product->ref).'</td>';
 			    print '<td class="linecoldescription"><input type="submit" class="button" value="' . $langs->trans("Modify") . '"></td>';
 			    print '<td class="linecoldescription"></td>';
 			    print '</tr>';
@@ -544,8 +525,8 @@ if ($id > 0) {
 			print '</form>';
 
 			print '<td class="linecoldescription">'.$fournisseur->getNomUrl(1).'</td>';
-			print '<td class="linecoldescription">'.number_format($fournPrice->fourn_tva_tx, 2, ',', '').'</td>';
-			print '<td class="linecoldescription">'.number_format($fournPrice->fourn_unitprice, 2, ',', '').'</td>';
+			print '<td class="linecoldescription">'.number_format($object->fk_product_fournisseur_price->fourn_tva_tx, 2, ',', '').'</td>';
+			print '<td class="linecoldescription">'.number_format($object->fk_product_fournisseur_price->fourn_unitprice, 2, ',', '').'</td>';
 			if ($object->status < $object::STATUS_PROGRAM) print '<td class="linecoldescription"><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delFournPrice"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td>';
 
 		}
@@ -555,7 +536,7 @@ if ($id > 0) {
 		    print '<input type="hidden" name="action" value="addFournPrice">';
 		    print '<tr class="liste_titre nodrag nodrop">';
 		    print '<td class="linecoldescription">'.$langs->trans('AddSupplier').'</td>';
-		    $fournisseur = $form->select_produits_fournisseurs_list(0, "", "fourn_price_id", "", "", $product->ref);
+		    $fournisseur = $form->select_produits_fournisseurs_list(0, "", "fourn_price_id", "", "", $object->fk_product->ref);
 			print '<td class="linecoldescription" colspan="2">'.$fournisseur."</td>";
 		    print '<td class="linecoldescription left" colspan="2"><input type="submit" class="button" value="' . $langs->trans("Add") . '"></td>';
 			print '</tr>';

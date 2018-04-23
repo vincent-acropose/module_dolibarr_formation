@@ -4,6 +4,8 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/commonobject.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/class/productbatch.class.php';
 require_once DOL_DOCUMENT_ROOT.'/product/stock/class/entrepot.class.php';
 require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.class.php';
+require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.product.class.php';
+require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 
 class Formation extends CommonObject
 {
@@ -22,6 +24,12 @@ class Formation extends CommonObject
 	public $fk_product_fournisseur_price;
 	public $mail;
 	public $lieu;
+	public $users = [];
+
+	// Totaux
+	public $total_ht = 0;
+	public $total_salariale = 0;
+	public $total_reste = 0;
 
 	// Statut
 	const STATUS_DRAFT = 0;
@@ -55,21 +63,6 @@ class Formation extends CommonObject
 	/* ---------- GETTERS ---------- */
 	/* ----------------------------- */
 
-	public function getUsers() {
-
-		$users = $this->request("SELECT fk_user FROM ".MAIN_DB_PREFIX.$this->table_link_user." WHERE fk_formation=".$this->id,0,"*");
-
-		if($users != -1) {
-			return $users;
-		}
-		else {
-			$this->errors = "Une erreur est survenu lors de la récupération des collaborateurs";
-			return -1;
-		}
-		return -1;
-
-	}
-	
 	public function getNumero()
 	{
 		if (preg_match('/^[\(]?PROV/i', $this->ref) || empty($this->ref))
@@ -129,6 +122,64 @@ class Formation extends CommonObject
 		return $id;
 	}
 
+	public function getMail() {
+		return $this->request("SELECT * FROM ".MAIN_DB_PREFIX.$this->table_conf." WHERE nom='mail'")->value;
+	}
+
+	public function getYear() {
+		$sql = "SELECT DISTINCT YEAR(dated) year FROM ".MAIN_DB_PREFIX.$this->table_element;
+
+		$yearsList = $this->request($sql,0,"*");
+
+		$years = '<select name="year" id="year" class="flat year">';
+		foreach ($yearsList as $year) {
+			$years .= '<option value="'.$year['year'].'">'.$year['year'].'</option>';
+		}
+
+		$years .= '</select>';
+
+		return $years;
+	}
+
+	public function getTrainingByDate($year, $userId=false) {
+
+		if ($userId) {
+			$sql = "SELECT f.rowid FROM ".MAIN_DB_PREFIX.$this->table_link_user." fu";
+			$sql .= " LEFT JOIN ".MAIN_DB_PREFIX.$this->table_element." f ON (fu.fk_formation = f.rowid)";
+			$sql .= " WHERE fu.fk_user=".$userId." AND YEAR(f.dated)=".$year;
+		}
+		else {
+			$sql = "SELECT f.rowid FROM ".MAIN_DB_PREFIX.$this->table_element." f";
+			$sql .= " WHERE YEAR(f.dated)=".$year;
+		}
+
+		$trainingsList = $this->request($sql,0,"*");
+		$trainings = [];
+
+		foreach ($trainingsList as $training) {
+			$addTraining = new Formation($this->db);
+			$addTraining->fetch($training['rowid']);
+
+			array_push($trainings, $addTraining);
+		}
+
+		return $trainings;
+
+	}
+
+	public function createStatCSV($year, $collaborator, $totalFormation, $totalCollaborateur, $total) {
+		$collaborateur = new User($this->db);
+		$collaborateur->fetch($collaborator);
+
+		$titles = "Année;Collaborateur;Coût Formation Total;Coût salarial Total;Coût Total\n";
+		$contains = $year.";".$collaborateur->login.";".$totalFormation.";".$totalCollaborateur.";".$total;
+
+		$file = fopen(dol_buildpath("formation/documents")."/Stats.csv", "w");
+		fwrite($file, $titles);
+		fwrite($file, $contains);
+		fclose($file);
+	}
+
 	/* ----------------------------- */
 	/* ---------- SETTERS ---------- */
 	/* ----------------------------- */
@@ -149,7 +200,10 @@ class Formation extends CommonObject
 			}
 
 			if (!empty($value['fk_product'])) {
-				$this->fk_product = $value['fk_product'];
+				$productAdd = new Product($this->db);
+				$productAdd->fetch($value['fk_product']);
+
+				$this->fk_product = $productAdd;
 			}
 
 			if (!empty($value['dated'])) {
@@ -237,7 +291,7 @@ class Formation extends CommonObject
 			$this->errors = "Une erreur est survenu lors de la programmation de la fromation: Aucun tarif n'a été défini";
 			return -1;
 		}
-		elseif ($this->getUsers()->num_rows == 0) {
+		elseif (sizeof($this->users) == 0) {
 			$this->errors = "Une erreur est survenu lors de la programmation de la fromation: Aucun collaborateur n'a été ajouté";
 			return -1;
 		}
@@ -265,10 +319,6 @@ class Formation extends CommonObject
 			$this->$mail = $mail;
 			$this->setConf("mail", $this->$mail);
 		}
-	}
-
-	public function getMail() {
-		return $this->request("SELECT * FROM ".MAIN_DB_PREFIX.$this->table_conf." WHERE nom='mail'")->value;
 	}
 
 	public function setConf($name, $value) {
@@ -326,7 +376,7 @@ class Formation extends CommonObject
 	}
 
 	public function delete() {
-		if ($this->fk_product_fournisseur_price) {
+		if ($this->users) {
 			$trainingDelete = $this->request("DELETE FROM ".MAIN_DB_PREFIX.$this->table_link_user." WHERE fk_formation=".$this->id, 1);
 		}
 
@@ -338,11 +388,9 @@ class Formation extends CommonObject
 
 	public function addUser($userId) {
 
-		$users = $this->getUsers();
+		foreach ($this->users as $user) {
 
-		foreach ($users as $user) {
-
-			if ($user['fk_user'] == $userId) {
+			if ($user->id == $userId) {
 				$this->errors = "Une erreur est survenu lors de l'ajout d'un collaborateur: L'utilisateur est déjà liée à la formation.";
 				return -1;
 			}
@@ -358,6 +406,7 @@ class Formation extends CommonObject
 			$addUser = $this->request('INSERT INTO '.MAIN_DB_PREFIX.$this->table_link_user.' (rowid, fk_user, fk_formation) VALUES ('.$rowid.','.$userId.','.$this->id.')',1);
 
 			if ($addUser) {
+				$this->fetch($this->id);
 				return 0;
 			}
 			else {
@@ -378,6 +427,7 @@ class Formation extends CommonObject
 			$delUser = $this->request("DELETE FROM ".MAIN_DB_PREFIX.$this->table_link_user." WHERE fk_user=".$id." AND fk_formation=".$this->id, 1);
 
 			if ($delUser) {
+				$this->fetch($this->id);
 				return 0;
 			}
 
@@ -398,6 +448,7 @@ class Formation extends CommonObject
 			$request = $this->request("UPDATE ".MAIN_DB_PREFIX.$this->table_element." SET fk_product_fournisseur_price=".$id.", date_maj=NOW() WHERE rowid=".$this->id, 1);
 
 			if ($request) {
+				$this->fetch($this->id);
 				return 0;
 			}
 			else {
@@ -438,6 +489,7 @@ class Formation extends CommonObject
 			$request = $this->request("UPDATE ".MAIN_DB_PREFIX.$this->table_element." SET fk_product_fournisseur_price=NULL, date_maj=NOW() WHERE rowid=".$this->id, 1);
 
 			if ($request) {
+				$this->fetch($this->id);
 				return 0;
 			}
 			else {
@@ -462,9 +514,9 @@ class Formation extends CommonObject
 		$sql .= ", datef='".$this->datef."'";
 		$sql .= ", help=".$this->help;
 		$sql .= ", duration=".$this->duration;
-		$sql .= ", fk_product=".$this->fk_product;
+		$sql .= ", fk_product=".$this->fk_product->id;
 		$sql .= ", lieu='".$this->lieu."'";
-		if ($this->fk_product_fournisseur_price) $sql .= ", fk_product_fournisseur_price=".$this->fk_product_fournisseur_price;
+		if ($this->fk_product_fournisseur_price) $sql .= ", fk_product_fournisseur_price=".$this->fk_product_fournisseur_price->product_fourn_price_id;
 		$sql .= ", date_maj=NOW() WHERE rowid=".$this->id;
 
 		$request = $this->request($sql, 1);
@@ -530,31 +582,62 @@ class Formation extends CommonObject
 		$sql = " SELECT f.rowid, f.ref, f.label, f.date_cre, f.dated, f.datef, f.help, f.fk_statut, f.fk_product, f.duration, f.fk_product_fournisseur_price, f.lieu";
 		$sql.= " FROM ".MAIN_DB_PREFIX.$this->table_element." as f";
 		$sql.= " WHERE f.rowid=".$id;
-		$res = $this->db->query($sql);
+		$res = $this->request($sql);
+
+		$sql = " SELECT fu.fk_user";
+		$sql.= " FROM ".MAIN_DB_PREFIX.$this->table_link_user." as fu";
+		$sql.= " WHERE fu.fk_formation=".$id;
+		$users = $this->request($sql, 0, "*");
 
 		if ($res) {
-			$obj = $this->db->fetch_object($res);
+			$product = new Product($this->db);
+			$product->fetch($res->fk_product);
 
-			$this->id = $obj->rowid;
-			$this->ref = $obj->ref;
-			$this->label = $obj->label;
-			$this->date_cre = $obj->date_cre;
-			$this->dated = $obj->dated;
-			$this->datef = $obj->datef;
-			$this->status = $obj->fk_statut;
-			$this->fk_product = $obj->fk_product;
-			$this->help = $obj->help;
-			$this->duration = $obj->duration;
-			$this->fk_product_fournisseur_price = $obj->fk_product_fournisseur_price;
-			$this->lieu = $obj->lieu;
+			$this->id = $res->rowid;
+			$this->ref = $res->ref;
+			$this->label = $res->label;
+			$this->date_cre = $res->date_cre;
+			$this->dated = $res->dated;
+			$this->datef = $res->datef;
+			$this->status = $res->fk_statut;
+			$this->help = $res->help;
+			$this->duration = $res->duration;
+			$this->fk_product = $product;
+			$this->lieu = $res->lieu;
 
-			if($this->id > 1) $this->ref_previous = $this->id - 1;
-			if($this->id < $this->getNextId() - 1) $this->ref_next = $this->id + 1;
-			return 1;
+			if ($res->fk_product_fournisseur_price) {
+				$fournPrice = new ProductFournisseur($this->db);
+				$fournPrice->fetch_product_fournisseur_price($res->fk_product_fournisseur_price);
+				$this->fk_product_fournisseur_price = $fournPrice;
+				$this->total_ht = $this->fk_product_fournisseur_price->fourn_unitprice*$this->duration;
+			}
+
+			else {
+				$this->fk_product_fournisseur_price = $res->fk_product_fournisseur_price;
+			}
+
 		}
+
 		else {
 			return -1;
 		}
+		if ($users) {
+			foreach ($users as $user) {
+				$userAdd = new User($this->db);
+				$userAdd->fetch($user['fk_user']);
+				$this->users[$userAdd->id] = $userAdd;
+
+				$this->total_salariale += $userAdd->array_options['options_salaire']*$this->duration;
+			}
+		}
+
+		$this->total_reste = ($this->total_ht+$this->total_salariale)-$this->help;
+
+		if($this->id > 1) $this->ref_previous = $this->id - 1;
+		if($this->id < $this->getNextId() - 1) $this->ref_next = $this->id + 1;
+
+		return 1;
+
 	}
 
 	function check_extension($name) {
