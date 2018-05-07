@@ -9,7 +9,7 @@ require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.class.php';
 require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.product.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
-require_once DOL_DOCUMENT_ROOT.'/core/class/CMailFile.class.php';
+require_once DOL_DOCUMENT_ROOT.'/core/class/dolgraph.class.php';
 dol_include_once('/formation/class/formation.class.php');
 dol_include_once('/formation/lib/formation.lib.php');
 
@@ -20,11 +20,8 @@ $langs->load('formation@formation');
 $action = GETPOST('action');
 $id = GETPOST('id', 'int');
 $collaborator = GETPOST('user');
-$year = GETPOST('year');
-$trainingCost = 0;
-$collabCost = 0;
-$help = 0;
-$total = 0;
+$yearFilter = GETPOST('year');
+$statusFilter = GETPOST('status');
 
 $mode = 'view';
 if (empty($user->rights->formation->write)) $mode = 'view'; // Force 'view' mode if can't edit object
@@ -43,6 +40,9 @@ $parameters = array('id' => $id, 'ref' => $ref, 'mode' => $mode);
 $reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action); // Note that $action and $object may have been modified by some
 if ($reshook < 0) setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
 
+$trainings = [];
+$trainingsLast = [];
+
 // Si vide alors le comportement n'est pas remplacé
 if (empty($reshook))
 {
@@ -50,34 +50,10 @@ if (empty($reshook))
 	switch ($action) {
 		case 'getStats':
 
-			if ($collaborator != -1) {
-				$trainings = $object->getTrainingByDate($year, $collaborator);
-				foreach ($trainings as $training) {
-					$trainingCost += $training->total_ht/sizeof($training->users);
-					$collabCost += $training->users[$collaborator]->array_options['options_salaire']*$training->duration;
-					$help += $training->help/sizeof($training->users);
-				}
-				$total += $trainingCost+$collabCost-$help;
-			}
-			elseif ($collaborator == -1) {
-				$trainings = $object->getTrainingByDate($year);
-				foreach ($trainings as $training) {
-					$trainingCost += $training->total_ht;
-					$collabCost += $training->total_salariale;
-					$help += $training->help;
-					$total += $training->total_reste;
-				}
-			}
-			else {
-				$object->errors = "Impossible de récupérer les données.";
-				break;
-			}
+			$trainings = $object->getTrainingByDate($yearFilter, $collaborator, $statusFilter);
+            $trainingsLast = $object->getTrainingByDate(($yearFilter-1), $collaborator, $statusFilter);
 
-			$object->createStatCSV($year, $collaborator, $trainingCost, $collabCost, $total);
-
-			break;
-
-		default:
+            $object->createStatCSV($trainings, $collaborator);
 
 			break;
 	}
@@ -93,6 +69,10 @@ $formfile = new FormFile($db);
 
 $title=$langs->trans("Statistics");
 llxHeader('',$title);
+
+// Graphs
+$px1 = $object->getGraph(1, $trainings, $trainingsLast, $yearFilter);
+$px2 = $object->getGraph(2, $trainings, $trainingsLast, $yearFilter);
 
 // Fiche statistiques
 include('tpl/statistics.tpl.php');

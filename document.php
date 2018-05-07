@@ -118,9 +118,13 @@ if ($object->id)
 	$filearray=dol_dir_list($upload_dir,"files",0,'','(\.meta|_preview.*\.png)$',"","",1);
 
 	$totalsize=0;
+    $totalFile=0;
 	foreach($filearray as $key => $file)
 	{
-		$totalsize += $file['size'];
+        if (strstr($file['name'], $object->ref)) {
+            $totalsize += $file['size'];
+            $totalFile += 1;
+        }
 	}
 
 
@@ -137,7 +141,7 @@ if ($object->id)
     print '<div class="underbanner clearboth"></div>';
     print '<table class="border tableforfield" width="100%">';
 
-    print '<tr><td class="titlefield">'.$langs->trans("NbOfAttachedFiles").'</td><td colspan="3">'.count($filearray).'</td></tr>';
+    print '<tr><td class="titlefield">'.$langs->trans("NbOfAttachedFiles").'</td><td colspan="3">'.$totalFile.'</td></tr>';
     print '<tr><td>'.$langs->trans("TotalSizeOfAttachedFiles").'</td><td colspan="3">'.$totalsize.' '.$langs->trans("bytes").'</td></tr>';
     print '</table>';
 

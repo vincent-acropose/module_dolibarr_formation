@@ -14,9 +14,11 @@ Totalht=Total HT
 
 # STATS
 StatisticsOfTraining=Statistiques des formations
-TrainingCost=Coût Total de formation
-CollabCost=Coût Salariale Total
+TrainingLabel=Libelle
+TrainingCost=Coût Total
+CollabCost=Coût Salarial Total
 TotalCost=Coût Total
+NoTraining=Aucune Formation Trouvée
 
 # MENU
 formationMenu=Formation
@@ -33,11 +35,21 @@ formationStatusProgram=Programmée
 formationStatusFinish=Terminée (fermée)
 formationStatusCancel=Annulée (fermée)
 
+# STATUS COURT
 Draft=Brouillon
-Validate=Validé
-Cancel=Annulé
-Accepted=Accepté
-Finish=Terminé
+Validate=Valider
+Predict=Prévoir
+Program=Programmer
+Cancel=Annuler
+Finish=Terminer
+Reopen=Rouvrir
+UnPrediction=Ne plus prévoir
+
+Valid=Validée
+Prediction=Prévue
+ProgramMin=Programmée
+CancelMin=Annulée
+FinishMin=Terminée
 
 # INDEX
 TrainingArea=Espace formations
@@ -61,7 +73,7 @@ DateTraining=Date de début de formation
 DateTrainingFinish=Date de fin de formation
 Training = Formation
 PriceP=Coût Pédagogique
-PriceS=Coût Salariale
+PriceS=Coût Salarial
 PriceT=Total HT
 HelpOPCA=Aides OPCA
 InCharge=Reste à charge
@@ -71,20 +83,8 @@ Collaborator = Collaborateurs
 NoParticipate=Aucun Collaborateur
 Place=Lieu
 AddNewSupplier=Ajouter Prix Fournisseur à la volée
-
-# CARD TPL
-Save=Enregistrer
-CreateDraft=Créer brouillon
-Cancel=Annuler
-Validate=Valider
-Prediction=Prévus
-Predict=Prévoir
-Modify=Modifier
-Reopen=Rouvrir
-ToClone=Cloner
-Delete=Supprimer
-UnPrediction=Ne plus prévoir
-Program=Programmer
+SendConvocation=Envoyer Convocation
+SendQuestionnaire=Envoyer Questionnaire
 
 # FORM LIST
 DateCre=Date Début

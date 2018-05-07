@@ -86,7 +86,7 @@ echo $r->render($PDOdb, $sql, array(
 		,'fk_statut' => $langs->trans('Status')
 	)
 	,'eval'=>array(
-		'ref' => '_getFormationNomUrl(@val@)'
+		'ref' => '_getFormationNomUrl(@rowid@)'
 		,'fk_statut' => '_getStatus(@val@)'
 	)
 ));
@@ -105,14 +105,6 @@ function _getFormationNomUrl($rowid)
 	global $db;
 	
 	$f = new Formation($db);
-
-	if (preg_match('#^PROV#', $rowid)) {
-		$rowid = explode("V", $rowid)[1];
-	}
-	elseif ($rowid<0) {
-		$rowid = $rowid*-1;
-	}
-
 	$f->fetch($rowid);
 	return $f->getNomUrl(1);
 

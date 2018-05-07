@@ -266,8 +266,7 @@ if (empty($reshook))
             }
             break;
 
-        case 'sendMail':
-        	$users = $object->users;
+        case 'sendConvoc':
         	$convocation = false;
 
 		    foreach($filearray as $key => $file) {
@@ -278,12 +277,13 @@ if (empty($reshook))
 		    }
 
 		    if ($convocation) {
-	        	foreach ($users as $user) {
-	        		$object->mail = str_replace("[prenom]", $recipient->firstname, $object->mail);
-	        		$object->mail = str_replace("[nom]", $recipient->lastname, $object->mail);
+	        	foreach ($object->users as $user) {
+	        		$object->mail = str_replace("[prenom]", $user->firstname, $object->mail);
+	        		$object->mail = str_replace("[nom]", $user->lastname, $object->mail);
 	        		$object->mail = str_replace("[libelle]", $object->label, $object->mail);
 
-					$mailfile = new CMailFile("Convocation ".$object->label, $recipient->email, "info@dolibarr.com", $object->mail, [$convocation['fullname']], ['application/pdf'], ['Convocation '.$object->label.".pdf"], "", "", 0, 1);
+					$mailfile = new CMailFile('Convocation '.$object->label, $user->email, 'info@dolibarr.com', $object->mail, [$convocation["fullname"]], ['application/pdf'], [$convocation["name"]]);
+
 					$mailfile->sendfile();
 	        	}
 
@@ -297,6 +297,37 @@ if (empty($reshook))
 	        	$object->errors = "Aucune convocation n'a été ajoutée.";
 	        }
 
+        	break;
+
+        case 'sendQuestionnaire':
+        	$questionnaire = false;
+
+		    foreach($filearray as $key => $file) {
+		    	if (strstr(strtolower($file['name']), 'questionnaire')) {
+		    		$questionnaire = $file;
+		    		break;
+		    	}
+		    }
+
+		    if ($questionnaire) {
+	        	foreach ($object->users as $user) {
+	        		$object->mail = str_replace("[prenom]", $user->firstname, $object->mail);
+	        		$object->mail = str_replace("[nom]", $user->lastname, $object->mail);
+	        		$object->mail = str_replace("[libelle]", $object->label, $object->mail);
+
+					$mailfile = new CMailFile("Questionnaire ".$object->label, $user->email, "info@dolibarr.com", $object->mail, [$questionnaire['fullname']], ['application/pdf'], [$questionnaire["name"]], "", "", 0, 1);
+					$mailfile->sendfile();
+	        	}
+
+	        	$eventLabel = "Mail envoyé aux collaborateurs";
+				$eventNote = "Le questionnaire à été envoyé aux collaborateurs par ".$user->login;
+				$object->addEvent($user->id, $eventLabel, $eventNote);
+
+	        	header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
+	        }
+	        else {
+	        	$object->errors = "Aucun questionnaire n'a été ajoutée.";
+	        }
         	break;
 
         case 'newFournPrice':
@@ -359,9 +390,9 @@ if ($id > 0) {
 		}
 		print '</td></tr>';
 
-		print '<tr><td class="titlefieldcreate">' . $langs->trans('durationH') . '</td><td><input type=text name="duration" value='.$object->duration.'></td></tr>';
+		print '<tr><td class="titlefieldcreate fieldrequired">' . $langs->trans('durationH') . '</td><td><input type=text name="duration" value='.number_format($object->duration, 2, '.', '').'></td></tr>';
 
-		print '<tr><td class="titlefieldcreate">' . $langs->trans('HelpOPCA') . '</td><td><input type=text name="help" value='.$object->help.'></td></tr>';
+		print '<tr><td class="titlefieldcreate">' . $langs->trans('HelpOPCA') . '</td><td><input type=text name="help" value='.number_format($object->help, 2, '.', '').'></td></tr>';
 
 		// Lieu
 		print '<tr><td class="titlefieldcreate">' . $langs->trans('Place') . '</td><td>';
@@ -509,7 +540,7 @@ if ($id > 0) {
 			    print '<input type="hidden" name="action" value="editFournPrice">';
 			    print '<tr class="liste_titre nodrag nodrop">';
 			    print '<td class="linecoldescription">'.$langs->trans('EditSupplier').'</td>';
-				print '<td class="linecoldescription">'.$form->select_produits_fournisseurs_list(0, "", "fourn_price_id", "", "", $object->fk_product->ref).'</td>';
+				print '<td class="linecoldescription" colspan="3">'.$form->select_produits_fournisseurs_list(0, "", "fourn_price_id", "", "", $object->fk_product->ref).'</td>';
 			    print '<td class="linecoldescription"><input type="submit" class="button" value="' . $langs->trans("Modify") . '"></td>';
 			    print '<td class="linecoldescription"></td>';
 			    print '</tr>';
@@ -520,7 +551,7 @@ if ($id > 0) {
 		    print '<td class="linecoldescription">'.$langs->trans('Supplier').'</td>';
 		    print '<td class="linecoldescription">'.$langs->trans('TVA').'</td>';
 		    print '<td class="linecoldescription">'.$langs->trans('UnitPrice').'</td>';
-		    print '<td class="linecoldescription"></td>';
+		    print '<td class="linecoldescription" colspan="3"></td>';
 			print '</tr>';
 			print '</form>';
 
@@ -539,6 +570,7 @@ if ($id > 0) {
 		    $fournisseur = $form->select_produits_fournisseurs_list(0, "", "fourn_price_id", "", "", $object->fk_product->ref);
 			print '<td class="linecoldescription" colspan="2">'.$fournisseur."</td>";
 		    print '<td class="linecoldescription left" colspan="2"><input type="submit" class="button" value="' . $langs->trans("Add") . '"></td>';
+		    print '<td class="linecoldescription left" colspan="2"></td>';
 			print '</tr>';
 			print '</form>';
 
@@ -546,9 +578,10 @@ if ($id > 0) {
 			print '<input type="hidden" name="action" value="newFournPrice">';
 			print '<tr class="liste_titre nodrag nodrop">';
 		    print '<td class="linecoldescription">'.$langs->trans('AddNewSupplier').'</td>';
-		    print '<td class="linecoldescription">'.$form->select_thirdparty_list("", "supplierId", "s.code_fournisseur IS NOT NULL")."</td>";
+		    print '<td class="linecoldescription">'.$form->select_company("", "supplierId", "code_fournisseur IS NOT NULL")."</td>";
 		    print '<td class="linecoldescription"><input type="text" name="newSupplierPrice" placeholder="Nouveau prix"></td>';
-		    print '<td class="linecoldescription"><input type="text" name="tva_tx" placeholder="TVA"></td>';
+		    print '<td class="linecoldescription"><input type="text" name="duree" value="'.number_format($object->duration, 2, ',', '').'" placeholder="' . $langs->trans("Duration") . '"></td>';
+		    print '<td class="linecoldescription"><input type="text" name="tva_tx" placeholder="' . $langs->trans("TVA") . '"></td>';
 		    print '<td class="linecoldescription"><input type="submit" class="button" value="' . $langs->trans("Create") . '"></td>';
 			print '</tr>';
 			print '</form>';
@@ -622,8 +655,14 @@ if ($id > 0) {
 		}
 		if ($object->status == $object::STATUS_PROGRAM) {
 			print '<td class="nobordernopadding" valign="middle"><div class="titre">';
-			print '<input type="hidden" name="action" value="sendMail">';
-			print '<input type="submit" class="button" value="'.$langs->trans("SendMail").'">';
+			print '<input type="hidden" name="action" value="sendConvoc">';
+			print '<input type="submit" class="button" value="'.$langs->trans("SendConvocation").'">';
+			print '</div></td>';
+		}
+		if ($object->status == $object::STATUS_FINISH) {
+			print '<td class="nobordernopadding" valign="middle"><div class="titre">';
+			print '<input type="hidden" name="action" value="sendQuestionnaire">';
+			print '<input type="submit" class="button" value="'.$langs->trans("SendQuestionnaire").'">';
 			print '</div></td>';
 		}
 		print '</tr>';
@@ -814,7 +853,7 @@ else {
 		print '</td></tr>';
 
 		// Durée
-		print '<tr><td class="titlefieldcreate">' . $langs->trans('durationH') . '</td><td><input type=text name="duration"></td></tr>';
+		print '<tr><td class="titlefieldcreate fieldrequired">' . $langs->trans('durationH') . '</td><td><input type=text name="duration"></td></tr>';
 
 		// Help
 		print '<tr><td class="titlefieldcreate">' . $langs->trans('HelpOPCA') . '</td><td><input type=text name="help"></td></tr>';
