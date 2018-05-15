@@ -2,6 +2,8 @@
 
 require 'config.php';
 require_once DOL_DOCUMENT_ROOT.'/core/lib/usergroups.lib.php';
+require_once DOL_DOCUMENT_ROOT.'/product/class/product.class.php';
+require_once DOL_DOCUMENT_ROOT.'/fourn/class/fournisseur.class.php';
 dol_include_once('/formation/class/formation.class.php');
 
 if(empty($user->rights->formation->read)) accessforbidden();
@@ -12,9 +14,9 @@ $langs->load('formation@formation');
 $action=GETPOST('action','alpha');
 
 $PDOdb = new TPDOdb;
-$object = new formation($db);
 
 $hookmanager->initHooks(array('formationlist'));
+$object = new Formation($db);
 
 /*
  * Actions
@@ -34,14 +36,18 @@ if (empty($reshook))
  * View
  */
 
-llxHeader('',$langs->trans('formationList'),'','');
+llxHeader('',$langs->trans('Catalog'),'','');
 
 //$type = GETPOST('type');
 //if (empty($user->rights->formation->all->read)) $type = 'mine';
 
 // TODO ajouter les champs de son objet que l'on souhaite afficher
-$sql = 'SELECT t.rowid, t.ref, t.label, t.dated, t.fk_statut';
-$sql.= ' FROM '.MAIN_DB_PREFIX.'formation t ';
+$sql = "SELECT p.rowid 'formation', p.label, p.duration, fp.price, s.rowid 'formateur' FROM ".MAIN_DB_PREFIX."product p";
+$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."product_fournisseur_price fp ON (p.rowid = fp.fk_product)";
+$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."societe s ON (fp.fk_soc = s.rowid)";
+$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."categorie_product cp ON (p.rowid = cp.fk_product)";
+$sql .= " LEFT JOIN ".MAIN_DB_PREFIX."categorie c ON (cp.fk_categorie = c.rowid)";
+$sql .= " WHERE c.rowid = ".$object->tag;
 
 //$sql.= ' AND t.entity IN ('.getEntity('formation', 1).')';
 //if ($type == 'mine') $sql.= ' AND t.fk_user = '.$user->id;
@@ -49,7 +55,7 @@ $sql.= ' FROM '.MAIN_DB_PREFIX.'formation t ';
 $formcore = new TFormCore($_SERVER['PHP_SELF'], 'form_list_mymodule', 'GET');
 $nbLine = !empty($user->conf->MAIN_SIZE_LISTE_LIMIT) ? $user->conf->MAIN_SIZE_LISTE_LIMIT : $conf->global->MAIN_SIZE_LISTE_LIMIT;
 
-$r = new TListviewTBS('formation');
+$r = new TListviewTBS('catalog');
 echo $r->render($PDOdb, $sql, array(
 	'view_type' => 'list' // default = [list], [raw], [chart]
 	,'limit'=>array(
@@ -59,35 +65,38 @@ echo $r->render($PDOdb, $sql, array(
 	,'link' => array(
 	)
 	,'type' => array(
-		'dated' => 'date' // [datetime], [hour], [money], [number], [integer]
 	)
 	,'search' => array(
-		'ref' => array('recherche' => true, 'table' => 't', 'field' => 'ref')
-		,'label' => array('recherche' => true, 'table' => 't', 'field' => 'label')
-		,'fk_statut' => array('recherche' => Formation::$TStatus, 'to_translate' => true)
+		'formateur' => array('recherche' => true, 'table' => 's', 'field' => 'nom')
+		,'formation' => array('recherche' => true, 'table' => 'p', 'field' => 'ref')
+		,'label' => array('recherche' => true, 'table' => 'p', 'field' => 'label')
+		,'price' => array('recherche' => true, 'table' => 'fp', 'field' => 'price')
 	)
 	,'translate' => array()
 	,'hide' => array(
 		'rowid'
 	)
 	,'liste' => array(
-		'titre' => $langs->trans('formationList')
+		'titre' => $langs->trans('Catalog')
 		,'image' => img_picto('','title_generic.png', '', 0)
 		,'picto_precedent' => '<'
 		,'picto_suivant' => '>'
 		,'noheader' => 0
-		,'messageNothing' => $langs->trans('Noformation')
+		,'messageNothing' => $langs->trans('empty')
 		,'picto_search' => img_picto('','search.png', '', 0)
 	)
 	,'title'=>array(
 		'ref' => $langs->trans('Ref.')
+		,"duration" => $langs->trans('Duration')
+		,'formateur' => $langs->trans('Supplier')
+		,'formation' => $langs->trans('Training')
 		,'label' => $langs->trans('Label')
-		,'dated' => $langs->trans('DateTraining')
-		,'fk_statut' => $langs->trans('Status')
+		,'price' => $langs->trans('HourPrice')
 	)
 	,'eval'=>array(
-		'ref' => '_getFormationNomUrl(@rowid@)'
-		,'fk_statut' => '_getStatus(@val@)'
+		'formateur' => '_getSupplierNomUrl(@formateur@)'
+		,'formation' => '_getProductNomUrl(@formation@)'
+		,'price' => '_getPrice(@price@)'
 	)
 ));
 
@@ -97,19 +106,35 @@ llxFooter('');
 
 $db->close();
 
-function _getFormationNomUrl($rowid)
-{
+function _getProductNomUrl($rowid) {
+
 	global $db;
 	
-	$f = new Formation($db);
-	$f->fetch($rowid);
-	return $f->getNomUrl(1);
+	$p = new Product($db);
+	$p->fetch($rowid);
+	return $p->getNomUrl(1);
 
 }
 
-function _getStatus($statut)
-{
-	global $db;
+function _getSupplierNomUrl($rowid=false) {
 
-	return Formation::LibStatut($statut, 0);
+	global $db;
+	
+	if ($rowid) {
+		$f = new Fournisseur($db);
+		$f->fetch($rowid);
+		return $f->getNomUrl(1);
+	}
+	else {
+		return null;
+	}
+}
+
+function _getPrice($price=false) {
+	if ($price) {
+		return number_format($price, 2, ',', '');
+	}
+	else {
+		return null;
+	}
 }

@@ -49,9 +49,14 @@ $object = new Formation($db);
 /*
  * Actions
  */
-if ($action == "set_MAIL") {
-	$object->setMail(GETPOST('mail'));
+if ($action == "setMail") {
+	$object->setMail(GETPOST('mail'), 1);
 	header('Location: '.$_SERVER["PHP_SELF"]);
+}
+
+if ($action == "setTag") {
+    $object->setTag((int)GETPOST('tag'));
+    header('Location: '.$_SERVER["PHP_SELF"]);
 }
 
 /*
@@ -85,21 +90,35 @@ print '<td align="center" width="20">&nbsp;</td>';
 print '<td align="center" width="100" colspan=2>'.$langs->trans("Value").'</td>'."\n";
 print '</tr>';
 
-// Example with a yes / no select
 $var=!$var;
 print '<tr '.$bc[$var].'>';
 print '<td>'.$langs->trans("ParamLabelMail").'</td>';
 print '<td align="center" width="20">&nbsp;</td>';
 print '<td align="right" width="300">';
 print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
-print '<input type="hidden" name="action" value="set_MAIL">';
-print '<textarea name="mail">'.$object->mail.'</textarea>';
+print '<input type="hidden" name="action" value="setMail">';
+print '<textarea name="mail" rows="5" cols="20">'.$object->mail.'</textarea>';
 print '<div class="classfortooltip inline-block inline-block" style="vertical-align: top;;">';
 print '<img src="/dolibarr/htdocs/theme/eldy/img/info.png" alt="" title="" style="vertical-align: middle;">';
 print '</div>';
 print '</td>';
 print '<td>';
 print '<input type="submit" class="button" value="'.$langs->trans("Modify").'">';
+print '</form>';
+print '</td>';
+print '<td align="center"></td></tr>';
+
+$var=!$var;
+print '<tr '.$bc[$var].'>';
+print '<td>'.$langs->trans("ParamLabelTag").'</td>';
+print '<td align="center" width="20">&nbsp;</td>';
+print '<td align="right" width="300">';
+print '<form method="POST" action="'.$_SERVER['PHP_SELF'].'">';
+print '<input type="hidden" name="action" value="setTag">';
+print $form->select_all_categories('product', $object->tag, 'tag');
+print '</td>';
+print '<td>';
+print '<input type="submit" class="button" value="'.$langs->trans("Choose").'">';
 print '</form>';
 print '</td>';
 print '<td align="center"></td></tr>';
@@ -115,7 +134,8 @@ print '<div id="tiptip_content">';
 print '<u>Codes disponibles :</u><br>
 [prenom]: <font class="ok">Prénom du destinataire</font><br>
 [nom]: <font class="ok">Nom du destinataire</font><br>
-[libelle]: <font class="ok">Libelle de la formation</font>';
+[libelle]: <font class="ok">Libelle de la formation</font><br>
+[signature]: <font class="ok">Signature de l\'éxpéditeur</font>';
 print '</div>';
 print '</div>';
 

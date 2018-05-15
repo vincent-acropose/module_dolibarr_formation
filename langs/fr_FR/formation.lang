@@ -26,36 +26,32 @@ TopMenuformation=Formation
 LeftMenuformationCreate=Nouvelle formation
 LeftMenuformationList=Liste
 LeftMenuformationStat=Statistiques
+LeftMenuCatalogue=Catalogue
+LeftMenuCatalogueFormationList=Formations
+LeftMenuCatalogueFormateurList=Formateurs
 
 # STATUS
 formationStatusDraft=Brouillon (à valider)
 formationStatusValidated=Validée (à prévoir)
-formationStatusPrediction=Prévue
 formationStatusProgram=Programmée
 formationStatusFinish=Terminée (fermée)
 formationStatusCancel=Annulée (fermée)
 
 # STATUS COURT
-Draft=Brouillon
-Validate=Valider
-Predict=Prévoir
-Program=Programmer
-Cancel=Annuler
-Finish=Terminer
+trainingDraft=Brouillon
+trainingValid=Validée
+trainingProgram=Programmée
+trainingCancel=Annulée
+trainingFinish=Terminée
 Reopen=Rouvrir
-UnPrediction=Ne plus prévoir
-
-Valid=Validée
-Prediction=Prévue
-ProgramMin=Programmée
-CancelMin=Annulée
-FinishMin=Terminée
 
 # INDEX
 TrainingArea=Espace formations
-TrainingDraft=Formations en brouillon
+TrainingFinish=Formations terminées
+TrainingDraft=Formations en Brouillon
 TrainingOpen=Formations ouvertes
-TrainingPrediction=Formations prévues
+TrainingProgram=Formations programmées
+TrainingValidate=Formation Validée
 
 # LIST
 formationList=Liste des formations
@@ -103,8 +99,6 @@ CloneTraining=Cloner la formation
 ConfirmClone=Etes-vous sur de vouloir cloner la formation
 DeletreTraining=Supprimer la formation
 ConfirmDelete=Etes-vous sur de vouloir supprimer la formation
-PredictTraining=Prévoir la formation
-ConfirmPrediction=Etes-vous sur de vouloir prévoir la formation
 ProgramTraining=Programmer la formation
 ConfirmProgram=Etes-vous sur de vouloir programmer la formation
 FinishTraining=Terminer la formation
@@ -123,7 +117,15 @@ Send=Envoyer
 bytes=Octets
 
 # Params
-ParamLabelMail=Mail Convocation
+ParamLabelMail=Mail
+ParamLabelTag=Catégorie filtre
 
 #User
 Salary=Salaire Horaire Brut
+
+# Catalogue
+Catalog=Catalogue
+HourPrice=Prix Horaire
+
+# RH Card
+RHCard=RH

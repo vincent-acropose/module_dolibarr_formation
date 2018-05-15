@@ -48,33 +48,42 @@ if ($user->societe_id > 0)
 /*
  * View
  */
-
 llxHeader('',$langs->trans('TrainingArea'),'','');
 print load_fiche_titre($langs->trans("TrainingArea"),'','formation@formation');
 
 $sql = " SELECT f.rowid, f.ref, f.label, f.fk_statut, f.fk_product";
 $sql.= " FROM ".MAIN_DB_PREFIX.$object->table_element." as f";
-$sql.= " WHERE f.fk_statut = ".$object::STATUS_DRAFT;
+$sql.= " WHERE f.fk_statut = ".$object::STATUS_FINISH;
 
 $result = $db->query($sql);
 
-$result?$nbTraining = $db->num_rows($result):"";
+$nbTraining = $db->num_rows($result);
 
 print '<div class="fichecenter"><div class="fichethirdleft">';
 print '<table class="noborder" width="100%">';
-print '<tr class="liste_titre"><th colspan="4">'.$langs->trans("TrainingDraft").($nbTraining?' <span class="badge">'.$nbTraining.'</span>':'').'</th></tr>';
+print '<tr class="liste_titre"><th colspan="4">'.$langs->trans("TrainingFinish").($nbTraining?' <span class="badge">'.$nbTraining.'</span>':'').'</th></tr>';
 
-while ($obj = $db->fetch_object($result)) {
-
-	$object->fetch($obj->rowid);
-	$product->fetch($obj->fk_product);
-
+if ($result->num_rows == 0) {
 	print '<tr class="oddeven">';
-	print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
-	print '<td align="left" class="nowrap">'.$object->label.'</td>';
-	print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.$product->label.'</a></td>';
-	print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
+	print '<td align="left" class="nowrap" colspan=4>'.$langs->trans("NoTraining").'</td>';
 	print '</tr>';
+}
+
+else {
+
+	while ($obj = $db->fetch_object($result)) {
+
+		$object->fetch($obj->rowid);
+		$product->fetch($obj->fk_product);
+
+		print '<tr class="oddeven">';
+		print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
+		print '<td align="left" class="nowrap">'.$object->label.'</td>';
+		print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.$product->label.'</a></td>';
+		print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
+		print '</tr>';
+
+	}
 
 }
 
@@ -83,55 +92,107 @@ print '</div></div>';
 
 $sql = " SELECT f.rowid, f.ref, f.label, f.fk_statut, f.fk_product";
 $sql.= " FROM ".MAIN_DB_PREFIX.$object->table_element." as f";
-$sql.= " WHERE f.fk_statut = ".$object::STATUS_VALIDATED." OR f.fk_statut = ".$object::STATUS_PREDICTION;
+$sql.= " WHERE f.fk_statut = ".$object::STATUS_DRAFT;
 
 $result = $db->query($sql);
 
-$result?$nbTraining = $db->num_rows($result):"";
+$nbTraining = $db->num_rows($result);
 
 print '<div class="fichetwothirdright"><div class="ficheaddleft">';
 print '<table class="noborder" width="100%">';
-print '<tr class="liste_titre"><th colspan="4">'.$langs->trans("TrainingOpen").($nbTraining?' <span class="badge">'.$nbTraining.'</span>':'').'</th></tr>';
+print '<tr class="liste_titre"><th colspan="4">'.$langs->trans("TrainingDraft").($nbTraining?' <span class="badge">'.$nbTraining.'</span>':'').'</th></tr>';
 
-while ($obj = $db->fetch_object($result)) {
-
-	$object->fetch($obj->rowid);
-	$obj->fk_product != null ? $product->fetch($obj->fk_product) : $product = new Product($db);
-
+if ($result->num_rows == 0) {
 	print '<tr class="oddeven">';
-	print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
-	print '<td align="left" class="nowrap">'.$object->label.'</td>';
-	print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.$product->label.'</a></td>';
-	print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
+	print '<td align="left" class="nowrap" colspan=4>'.$langs->trans("NoTraining").'</td>';
 	print '</tr>';
+}
 
+else {
+	while ($obj = $db->fetch_object($result)) {
+		$object->fetch($obj->rowid);
+		$obj->fk_product != null ? $product->fetch($obj->fk_product) : $product = new Product($db);
+
+		print '<tr class="oddeven">';
+		print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
+		print '<td align="left" class="nowrap">'.$object->label.'</td>';
+		print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.$product->label.'</a></td>';
+		print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
+		print '</tr>';
+
+	}
 }
 
 print '</table><br />';
 
 $sql = " SELECT f.rowid, f.ref, f.label, f.fk_statut, f.fk_product";
 $sql.= " FROM ".MAIN_DB_PREFIX.$object->table_element." as f";
-$sql.= " WHERE f.fk_statut = ".$object::STATUS_PREDICTION." AND YEAR(f.date_cre)=".date('Y');
+$sql.= " WHERE f.fk_statut = ".$object::STATUS_VALIDATED;
 
 $result = $db->query($sql);
 
-$result?$nbTraining = $db->num_rows($result):"";
+$nbTraining = $db->num_rows($result);
 
 print '<table class="noborder" width="100%">';
-print '<tr class="liste_titre"><th colspan="4">'.$langs->trans("TrainingPrediction")." ".date('Y').($nbTraining?' <span class="badge">'.$nbTraining.'</span>':'').'</th></tr>';
+print '<tr class="liste_titre"><th colspan="5">'.$langs->trans("TrainingValidate")." ".($nbTraining?' <span class="badge">'.$nbTraining.'</span>':'').'</th></tr>';
 
-while ($obj = $db->fetch_object($result)) {
-
-	$object->fetch($obj->rowid);
-	$product->fetch($obj->fk_product);
-
+if ($result->num_rows == 0) {
 	print '<tr class="oddeven">';
-	print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
-	print '<td align="left" class="nowrap">'.$object->label.'</td>';
-	print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.$product->label.'</a></td>';
-	print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
+	print '<td align="left" class="nowrap" colspan=4>'.$langs->trans("NoTraining").'</td>';
 	print '</tr>';
+}
 
+else {
+	while ($obj = $db->fetch_object($result)) {
+
+		$object->fetch($obj->rowid);
+		$product->fetch($obj->fk_product);
+
+		print '<tr class="oddeven">';
+		print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
+		print '<td align="left" class="nowrap">'.date("d/m/Y", strtotime($object->dated)).'</td>';
+		print '<td align="left" class="nowrap">'.$object->label.'</td>';
+		print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.$product->label.'</a></td>';
+		print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
+		print '</tr>';
+
+	}
+}
+
+print '</table><br />';
+
+$sql = " SELECT f.rowid, f.ref, f.label, f.fk_statut, f.fk_product";
+$sql.= " FROM ".MAIN_DB_PREFIX.$object->table_element." as f";
+$sql.= " WHERE f.fk_statut = ".$object::STATUS_PROGRAM;
+
+$result = $db->query($sql);
+
+$nbTraining = $db->num_rows($result);
+
+print '<table class="noborder" width="100%">';
+print '<tr class="liste_titre"><th colspan="5">'.$langs->trans("TrainingProgram")." ".($nbTraining?' <span class="badge">'.$nbTraining.'</span>':'').'</th></tr>';
+
+if ($result->num_rows == 0) {
+	print '<tr class="oddeven">';
+	print '<td align="left" class="nowrap" colspan=4>'.$langs->trans("NoTraining").'</td>';
+	print '</tr>';
+}
+
+else {
+	while ($obj = $db->fetch_object($result)) {
+
+		$object->fetch($obj->rowid);
+		$product->fetch($obj->fk_product);
+
+		print '<tr class="oddeven">';
+		print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
+		print '<td align="left" class="nowrap">'.date("d/m/Y", strtotime($object->dated)).'</td>';
+		print '<td align="left" class="nowrap">'.$object->label.'</td>';
+		print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.$product->label.'</a></td>';
+		print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
+		print '</tr>';
+
+	}
 }
 
 print '</table>';

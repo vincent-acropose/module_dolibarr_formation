@@ -142,7 +142,7 @@ class modformation extends DolibarrModules
 		// 'thirdparty'       to add a tab in third party view
 		// 'user'             to add a tab in user view
         $this->tabs = array(
-        	//'user:+formation:formationMenu:formation@formation:$user->rights->formation->read:/formation/list.php?id=__ID__'
+        	'user:+rh:RH:formation@formation:$user->rights->formation->rh:/formation/rh.php?id=__ID__'
         );
 
         // Dictionaries
@@ -204,7 +204,7 @@ class modformation extends DolibarrModules
 		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
 		$this->rights[$r][1] = 'Consulter/modifier salaire des collaborateurs';	// Permission label
 		$this->rights[$r][3] = 0; 					// Permission by default for new user (0/1)
-		$this->rights[$r][4] = 'salary';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
+		$this->rights[$r][4] = 'rh';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$r++;
 
@@ -316,7 +316,7 @@ class modformation extends DolibarrModules
 			'titre'=>$langs->trans('LeftMenuformationStat'),
 			'mainmenu'=>'formation',
 			'leftmenu'=>'formation_left_stat',
-			'url'=>'/formation/Statistics.php',
+			'url'=>'/formation/statistics.php',
 			'langs'=>'formation@formation',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
 			'position'=>100+$r,
 			'enabled'=> '$conf->formation->enabled',  // Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled. Use '$leftmenu==\'system\'' to show if leftmenu system is selected.
@@ -324,6 +324,22 @@ class modformation extends DolibarrModules
 			'target'=>'',
 			'user'=>2
 		);				                // 0=Menu for internal users, 1=external users, 2=both
+		$r++;
+
+		$this->menu[$r]=array(
+			'fk_menu'=>'fk_mainmenu=formation',			                // Put 0 if this is a top menu
+			'type'=>'left',			                // This is a Top menu entry
+			'titre'=>$langs->trans('LeftMenuCatalogue'),
+			'mainmenu'=>'formation',
+			'leftmenu'=>'catalogue_left',
+			'url'=>'/formation/catalogue_index.php',
+			'langs'=>'formation@formation',	        // Lang file to use (without .lang) by module. File must be in langs/code_CODE/ directory.
+			'position'=>100+$r,
+			'enabled'=>'$conf->formation->enabled',	// Define condition to show or hide menu entry. Use '$conf->missionorder->enabled' if entry must be visible if module is enabled.
+			'perms'=>'$user->rights->formation->read',			                // Use 'perms'=>'$user->rights->missionorder->level1->level2' if you want your menu with a permission rules
+			'target'=>'',
+			'user'=>2
+		);
 		$r++;
 
 		
@@ -365,10 +381,10 @@ class modformation extends DolibarrModules
 		$result=$this->_load_tables('/formation/sql/');
 
 		// Create extrafields
-		include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
+		/*include_once DOL_DOCUMENT_ROOT.'/core/class/extrafields.class.php';
 		$extrafields = new ExtraFields($this->db);
 
-		$result=$extrafields->addExtraField('salaire', "Salaire Horaire Brut", 'varchar', 0, 10, 'user', 0, 0, '', '', 1, '$user->rights->formation->salary', 0, 0, '', '', 'formation@formation');
+		$result=$extrafields->addExtraField('salaire', "Salaire Horaire Brut", 'varchar', 0, 10, 'user', 0, 0, '', '', 1, '$user->rights->formation->salary', 0, 0, '', '', 'formation@formation');*/
 
 		return $this->_init($sql, $options);
 	}

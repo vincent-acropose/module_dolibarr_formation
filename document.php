@@ -81,7 +81,7 @@ if (empty($reshook)) {
 
         case 'delfile':
             if (unlink($upload_dir.'/'.$document)) {
-                $eventLabel = $fichier." Supprimé de la formation ".$object->ref." par ".$user->login;
+                $eventLabel = $document." Supprimé de la formation ".$object->ref." par ".$user->login;
                 $eventNote = "Le fichier ".$fichier." a été supprimé par ".$user->firstname." ".$user->lastname;
                 $object->addEvent($user->id, $eventLabel, $eventNote);
 

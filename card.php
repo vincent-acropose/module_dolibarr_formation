@@ -67,7 +67,7 @@ if (empty($reshook))
 		case 'edit':
 			if (GETPOST('edit') == "edit") {
 				if ($object->status == $object::STATUS_PROGRAM) {
-					$object->status = $object::STATUS_PREDICTION;
+					$object->status = $object::STATUS_VALIDATED;
 
 					$eventLabel = "Formation ".$object->ref." Déprogrammé";
 					$eventNote = "La formation ".$object->ref." a été déprogrammée par ".$user->login;
@@ -158,7 +158,8 @@ if (empty($reshook))
 
 		case 'confirm_clone':
 			if (!empty($user->rights->formation->write)) {
-				if ($clone = $object->clone() != -1) {
+				$clone = $object->clone();
+				if ($clone != -1) {
 
 					$eventLabel = "Formation créé depuis ".$object->ref."";
 					$eventNote = "La formation ".$clone->ref." a été créé par ".$user->login." depuis la fromation ".$object->ref;
@@ -200,24 +201,6 @@ if (empty($reshook))
 			
 			header('Location: '.dol_buildpath('/formation/list.php', 1));
 			exit;
-			break;
-
-		case 'confirm_prediction':
-			if (!empty($user->rights->formation->write)) {
-				if ($object->setPredict() != -1) {
-
-					$eventLabel = "Formation ".$object->ref." Prévue";
-					$eventNote = "La formation ".$object->ref." a été ajoutée au prévisionnelle par ".$user->login;
-					$object->addEvent($user->id, $eventLabel, $eventNote);
-
-				}
-
-				if (empty($object->errors)) {
-					header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
-					exit;
-				}
-
-			}
 			break;
 
 		case 'confirm_program':
@@ -266,68 +249,39 @@ if (empty($reshook))
             }
             break;
 
-        case 'sendConvoc':
-        	$convocation = false;
+        case 'send':
+        	$sendFile = false;
 
 		    foreach($filearray as $key => $file) {
-		    	if (strstr(strtolower($file['name']), 'convocation')) {
-		    		$convocation = $file;
+		    	if ($file['name'] == $document) {
+		    		$sendFile = $file;
 		    		break;
 		    	}
 		    }
 
-		    if ($convocation) {
-	        	foreach ($object->users as $user) {
-	        		$object->mail = str_replace("[prenom]", $user->firstname, $object->mail);
-	        		$object->mail = str_replace("[nom]", $user->lastname, $object->mail);
-	        		$object->mail = str_replace("[libelle]", $object->label, $object->mail);
+		    if ($sendFile) {
+	        	foreach ($object->users as $userTraining) {
+	        		$mail = $object->mail;
+	        		$mail = str_replace("[prenom]", $userTraining->firstname, $mail);
+	        		$mail = str_replace("[nom]", $userTraining->lastname, $mail);
+	        		$mail = str_replace("[libelle]", $object->label, $mail);
+	        		$mail = str_replace("[signature]", $user->signature, $mail);
 
-					$mailfile = new CMailFile('Convocation '.$object->label, $user->email, 'info@dolibarr.com', $object->mail, [$convocation["fullname"]], ['application/pdf'], [$convocation["name"]]);
+					$mailfile = new CMailFile($object->label, $userTraining->email, $user->email, $mail, [$sendFile["fullname"]], ['application/pdf'], [$sendFile["name"]]);
 
 					$mailfile->sendfile();
 	        	}
 
 	        	$eventLabel = "Mail envoyé aux collaborateurs";
-				$eventNote = "La convocation à été envoyé aux collaborateurs par ".$user->login;
-				$object->addEvent($user->id, $eventLabel, $eventNote);
+				$eventNote = "Document ".$sendFile["name"]." envoyé aux collaborateurs par ".$userTraining->login;
+				$object->addEvent($userTraining->id, $eventLabel, $eventNote);
 
 	        	header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
 	        }
 	        else {
-	        	$object->errors = "Aucune convocation n'a été ajoutée.";
+	        	$object->errors = "Problème lors de l'envoi.";
 	        }
 
-        	break;
-
-        case 'sendQuestionnaire':
-        	$questionnaire = false;
-
-		    foreach($filearray as $key => $file) {
-		    	if (strstr(strtolower($file['name']), 'questionnaire')) {
-		    		$questionnaire = $file;
-		    		break;
-		    	}
-		    }
-
-		    if ($questionnaire) {
-	        	foreach ($object->users as $user) {
-	        		$object->mail = str_replace("[prenom]", $user->firstname, $object->mail);
-	        		$object->mail = str_replace("[nom]", $user->lastname, $object->mail);
-	        		$object->mail = str_replace("[libelle]", $object->label, $object->mail);
-
-					$mailfile = new CMailFile("Questionnaire ".$object->label, $user->email, "info@dolibarr.com", $object->mail, [$questionnaire['fullname']], ['application/pdf'], [$questionnaire["name"]], "", "", 0, 1);
-					$mailfile->sendfile();
-	        	}
-
-	        	$eventLabel = "Mail envoyé aux collaborateurs";
-				$eventNote = "Le questionnaire à été envoyé aux collaborateurs par ".$user->login;
-				$object->addEvent($user->id, $eventLabel, $eventNote);
-
-	        	header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
-	        }
-	        else {
-	        	$object->errors = "Aucun questionnaire n'a été ajoutée.";
-	        }
         	break;
 
         case 'newFournPrice':
@@ -457,7 +411,7 @@ if ($id > 0) {
 
 		$head = formation_prepare_head($object);
 		$picto = 'formation@formation';
-		dol_fiche_head($head, 'card', $langs->trans("Training"), 0, $picto);
+		dol_fiche_head($head, 'card', $langs->trans("Training"), -1, $picto);
 
 		$linkback = '<a href="'.dol_buildpath('/formation/list.php', 1).'">'.$langs->trans("BackToList").'</a>';
 
@@ -535,7 +489,7 @@ if ($id > 0) {
 
 	    if ($object->fk_product_fournisseur_price) {
 
-	    	if ($object->status <= $object::STATUS_PREDICTION) {
+	    	if ($object->status <= $object::STATUS_VALIDATED) {
 
 			    print '<input type="hidden" name="action" value="editFournPrice">';
 			    print '<tr class="liste_titre nodrag nodrop">';
@@ -606,15 +560,11 @@ if ($id > 0) {
 	    		print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=valid">'.$langs->trans('Validate').'</a></div>';
 	    		print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=edit">'.$langs->trans('Modify').'</a></div>';
 	    		break;
-	    	
-	    	case $object::STATUS_VALIDATED:
-	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=prediction">'.$langs->trans('Predict').'</a></div>';
-	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=edit">'.$langs->trans('Modify').'</a></div>';
-	    		break;
 
-	    	case $object::STATUS_PREDICTION:
+	    	case $object::STATUS_VALIDATED:
 	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=program">'.$langs->trans('Program').'</a></div>';
 	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=edit">'.$langs->trans('Modify').'</a></div>';
+	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=cancel">'.$langs->trans('Cancel').'</a></div>';
 	    		break;
 
 	    	case $object::STATUS_PROGRAM:
@@ -631,7 +581,6 @@ if ($id > 0) {
 	  			print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=reopen">'.$langs->trans('Reopen').'</a></div>';
 	    		break;
 	    }
-		
 		print '<div class="inline-block divButAction"><a class="butAction" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=clone">'.$langs->trans('Cloner').'</a></div>';
 		print '<div class="inline-block divButAction"><a class="butAction butActionDelete" href="'.dol_buildpath('/formation/card.php', 1).'?id='.$object->id.'&action=del">'.$langs->trans('Delete').'</a></div>';
 
@@ -649,19 +598,19 @@ if ($id > 0) {
 		print '<tr>';
 		print '<td class="nobordernopadding widthpictotitle" valign="middle"><img src="/dolibarr/htdocs/theme/eldy/img/title_commercial.png" alt="" title="" class="valignmiddle" id="pictotitle"></td>';
 		print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$langs->trans('Collaborator').'</div></td>';
-		if ($object->status <= $object::STATUS_PREDICTION) {
+		if ($object->status <= $object::STATUS_VALIDATED) {
 			print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$form->select_dolusers('', 'user', 1, $exclude, 0, '', '', $object->entity, 0, 0, '', 0, '', 'maxwidth300',1).'</div></td>';
 			print '<td class="nobordernopadding" valign="middle"><div class="titre"><input type="submit" class="button" value="'.$langs->trans("Add").'"></div></td>';
 		}
 		if ($object->status == $object::STATUS_PROGRAM) {
 			print '<td class="nobordernopadding" valign="middle"><div class="titre">';
-			print '<input type="hidden" name="action" value="sendConvoc">';
+			print '<input type="hidden" name="action" value="send">';
 			print '<input type="submit" class="button" value="'.$langs->trans("SendConvocation").'">';
 			print '</div></td>';
 		}
 		if ($object->status == $object::STATUS_FINISH) {
 			print '<td class="nobordernopadding" valign="middle"><div class="titre">';
-			print '<input type="hidden" name="action" value="sendQuestionnaire">';
+			print '<input type="hidden" name="action" value="send">';
 			print '<input type="submit" class="button" value="'.$langs->trans("SendQuestionnaire").'">';
 			print '</div></td>';
 		}
@@ -702,6 +651,7 @@ if ($id > 0) {
 	    print '<th class="liste_titre" align="center"></th>';
 	    print '<th class="liste_titre"></th>';
 	    print '<th class="liste_titre"></th>';
+	    print '<th class="liste_titre"></th>';
 	    print '</tr>';
 
 	    foreach($filearray as $key => $file)
@@ -732,6 +682,13 @@ if ($id > 0) {
 	            date_timestamp_set($date, $file['date']);
 	            print '<td width="130px" align="center">';
 	            print date_format($date, 'd/m/Y H:i');
+	            print '</td>';
+
+	            print '<td align="center">&nbsp;</td>';
+	            print '<td class="valignmiddle right">';
+	            print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&document='.$file["name"].'&action=send" class="editfilelink">';
+	            print '<img src="/dolibarr/htdocs/theme/common/octicons/lib/svg/mail.svg" alt="" title="Envoyer Par Mail" class="pictomail">';
+	            print '</a>';
 	            print '</td>';
 
 	            print '<td align="center">&nbsp;</td>';
@@ -788,10 +745,6 @@ if ($id > 0) {
 				break;
 			case "del":
 				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('DeletreTraining'), $langs->trans('ConfirmDelete')." ".$object->ref, 'confirm_delete', '', 0, 1);
-				print $formconfirm;
-				break;
-			case "prediction":
-				$formconfirm = $form->formconfirm($_SERVER["PHP_SELF"].'?id='.$object->id, $langs->trans('PredictTraining'), $langs->trans('ConfirmPrediction')." ".$object->ref, 'confirm_prediction', '', 0, 1);
 				print $formconfirm;
 				break;
 			case "program":

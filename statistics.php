@@ -12,6 +12,7 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 require_once DOL_DOCUMENT_ROOT.'/core/class/dolgraph.class.php';
 dol_include_once('/formation/class/formation.class.php');
 dol_include_once('/formation/lib/formation.lib.php');
+dol_include_once('/formation/class/rh.class.php');
 
 if(empty($user->rights->formation->read)) accessforbidden();
 
@@ -20,8 +21,11 @@ $langs->load('formation@formation');
 $action = GETPOST('action');
 $id = GETPOST('id', 'int');
 $collaborator = GETPOST('user');
-$yearFilter = GETPOST('year');
+$yearbFilter = GETPOST('yearb');
+$yearfFilter = GETPOST('yearf');
 $statusFilter = GETPOST('status');
+
+$rhManager = new Rh($db);
 
 $mode = 'view';
 if (empty($user->rights->formation->write)) $mode = 'view'; // Force 'view' mode if can't edit object
@@ -50,8 +54,8 @@ if (empty($reshook))
 	switch ($action) {
 		case 'getStats':
 
-			$trainings = $object->getTrainingByDate($yearFilter, $collaborator, $statusFilter);
-            $trainingsLast = $object->getTrainingByDate(($yearFilter-1), $collaborator, $statusFilter);
+			$trainings = $object->getTrainingByDate($yearbFilter, $yearfFilter, $collaborator, $statusFilter);
+            $trainingsLast = $object->getTrainingByDate(($yearbFilter-1), $yearbFilter-1, $collaborator, $statusFilter);
 
             $object->createStatCSV($trainings, $collaborator);
 
@@ -71,8 +75,15 @@ $title=$langs->trans("Statistics");
 llxHeader('',$title);
 
 // Graphs
-$px1 = $object->getGraph(1, $trainings, $trainingsLast, $yearFilter);
-$px2 = $object->getGraph(2, $trainings, $trainingsLast, $yearFilter);
+if ($yearbFilter == $yearfFilter) {
+	$px1 = $object->getGraph(1, $trainings, $trainingsLast, $yearbFilter);
+	$px2 = $object->getGraph(2, $trainings, $trainingsLast, $yearbFilter);
+}
+else {
+	$px1 = $object->getGraph(1, $trainings, $trainingsLast, "De ".$yearbFilter." à ".$yearfFilter);
+	$px2 = $object->getGraph(2, $trainings, $trainingsLast, "De ".$yearbFilter." à ".$yearfFilter);
+}
+
 
 // Fiche statistiques
 include('tpl/statistics.tpl.php');

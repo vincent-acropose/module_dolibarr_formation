@@ -23,17 +23,32 @@
 			<table class="centpercent noborder" style="margin-top: 20px;">
 				<tbody>
 					<tr class="liste_titre">
-						<th class="liste_titre" colspan="2">
+						<th class="liste_titre" colspan="3">
 							<?php echo $langs->trans("Filter"); ?>
 						</th>
 					</tr>
 					<tr>
 						<td align="left"><?php echo $langs->trans("Year"); ?></td>
-						<td align="left">
+						<td align="left">De
 							<?php 
-							echo '<select name="year" id="year" class="flat year">';
+							echo '<select name="yearb" id="yearb" class="flat year">';
 							foreach ($object->getYear() as $year) {
-								if ($yearFilter == $year['year']) {
+								if ($yearbFilter == $year['year']) {
+									echo '<option value="'.$year['year'].'" selected>'.$year['year'].'</option>';
+								}
+								else {
+									echo '<option value="'.$year['year'].'">'.$year['year'].'</option>';
+								}
+							}
+
+							echo '</select>';
+							?>
+						</td>
+						<td align="left">à
+							<?php 
+							echo '<select name="yearf" id="yearf" class="flat year">';
+							foreach ($object->getYear() as $year) {
+								if ($yearfFilter == $year['year']) {
 									echo '<option value="'.$year['year'].'" selected>'.$year['year'].'</option>';
 								}
 								else {
@@ -47,7 +62,7 @@
 					</tr>
 					<tr>
 						<td align="left"><?php echo $langs->trans("Status"); ?></td>
-						<td align="left">
+						<td align="left" colspan="2">
 							<?php 
 							echo '<select name="status" id="status" class="flat status">';
 							echo '<option value=-1></option>';
@@ -61,12 +76,12 @@
 					</tr>
 					<tr>
 						<td align="left"><?php echo $langs->trans("Collaborateur"); ?></td>
-						<td align="left">
+						<td align="left" colspan="2">
 							<?php echo $form->select_dolusers($collaborator, 'user', 1) ?>
 						</td>
 					</tr>
 					<tr>
-						<td align="center" colspan="2"><input type="submit" class="button" value=<?php echo $langs->trans("Refresh"); ?>></td>
+						<td align="center" colspan="3"><input type="submit" class="button" value=<?php echo $langs->trans("Refresh"); ?>></td>
 					</tr>
 				</tbody>
 			</table>
@@ -125,6 +140,9 @@
 							<?php echo $langs->trans("Training"); ?>
 						</th>
 						<th class="liste_titre" align="center">
+							<?php echo $langs->trans("Date"); ?>
+						</th>
+						<th class="liste_titre" align="center">
 							<?php echo $langs->trans("TrainingLabel"); ?>
 						</th>
 						<th class="liste_titre" align="center">
@@ -137,7 +155,7 @@
 							<?php echo $langs->trans("CollabCost"); ?>
 						</th>
 						<th class="liste_titre" align="center">
-							<?php echo $langs->trans("help"); ?>
+							<?php echo $langs->trans("Help"); ?>
 						</th>
 						<th class="liste_titre" align="center">
 							<?php echo $langs->trans("TotalCost"); ?>
@@ -146,8 +164,8 @@
 				<?php
 					if ($trainings == -1) {
 				?>
-						<tr class="oddeven" colspan="5">
-							<td align="center">
+						<tr class="oddeven">
+							<td align="center" colspan="7">
 								<?php echo $langs->trans('NoTraining'); ?>
 							</td>
 						</tr>
@@ -169,16 +187,22 @@
 											<?php echo $training->getNomUrl(1); ?>
 										</td>
 										<td align="center">
+											<?php echo date("d/m/Y", strtotime($training->dated)); ?>
+										</td>
+										<td align="center">
 											<?php echo $training->label; ?>
 										</td>
 										<td align="right">
 											<?php echo $trainingUser->login; ?>
 										</td>
 										<td align="right">
-											<?php echo number_format($trainingUser->array_options['options_salaire']*$training->duration, 2, ',', ''); ?> €
+											<?php echo number_format($training->total_ht/sizeof($training->users), 2, ',', ''); ?> €
 										</td>
 										<td align="right">
-											<?php echo number_format($training->help/sizeof($training->users), 2, ',', ''); ?> €
+											<?php 
+												echo number_format($rhManager->getSalary($trainingUser->id)->salary*$training->duration, 2, ',', ''); 
+											?> 
+											€
 										</td>
 										<td align="right">
 											<?php echo number_format($training->help/sizeof($training->users), 2, ',', ''); ?> €
@@ -197,16 +221,16 @@
 					?>
 								<tr class="liste_total">
 									<td align="center"><?php echo $langs->trans('SousTotal'); ?></td>
-									<td colspan="6" align="right"><?php echo number_format($stt, 2, ',', '')." €"; ?></td>
+									<td colspan="7" align="right"><?php echo number_format($stt, 2, ',', '')." €"; ?></td>
 								</tr>
-								<tr class='oddeven'><td colspan='7'></td></tr>
+								<tr class='oddeven'><td colspan='8'></td></tr>
 					<?php
 							}
 					?>
 
 						<tr class="liste_total">
 							<td align="center"><?php echo $langs->trans('Total'); ?></td>
-							<td colspan="6" align="right"><?php echo number_format($total, 2, ',', '')." €"; ?></td>
+							<td colspan="7" align="right"><?php echo number_format($total, 2, ',', '')." €"; ?></td>
 						</tr>
 
 					<?php
@@ -219,6 +243,9 @@
 										<?php echo $training->getNomUrl(1); ?>
 									</td>
 									<td align="center">
+										<?php echo date("d/m/Y", strtotime($training->dated)); ?>
+									</td>
+									<td align="center">
 										<?php echo $training->label; ?>
 									</td>
 									<td align="center">
@@ -228,7 +255,10 @@
 										<?php echo number_format($training->total_ht/sizeof($training->users), 2, ',', ''); ?> €
 									</td>
 									<td align="right">
-										<?php echo number_format($training->users[$collaborator]->array_options['options_salaire']*$training->duration, 2, ',', ''); ?> €
+										<?php 
+											echo number_format($rhManager->getSalary($training->users[$collaborator]->id)->salary*$training->duration, 2, ',', ''); 
+										?> 
+										€
 									</td>
 									<td align="right">
 										<?php echo number_format($training->help/sizeof($training->users), 2, ',', ''); ?> €
@@ -246,7 +276,7 @@
 				?>
 						<tr class="liste_total">
 							<td align="center"><?php echo $langs->trans('Total'); ?></td>
-							<td colspan="6" align="right"><?php echo number_format($total, 2, ',', '')." €"; ?></td>
+							<td colspan="7" align="right"><?php echo number_format($total, 2, ',', '')." €"; ?></td>
 						</tr>
 				<?php
 						}
@@ -255,7 +285,7 @@
 
 				<tr class="oddeven">
 					<td align="center" colspan="7">
-						<a href="documents/Stats.csv"><button class="button"><?php echo $langs->trans("CSV"); ?></button></a>
+						<a href=<?php echo dol_buildpath('formation/documents/Stats.csv', 1); ?>><button class="button"><?php echo $langs->trans("CSV"); ?></button></a>
 					</td>
 				</tr>
 				
