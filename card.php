@@ -267,8 +267,7 @@ if (empty($reshook))
 	        		$mail = str_replace("[libelle]", $object->label, $mail);
 	        		$mail = str_replace("[signature]", $user->signature, $mail);
 
-					$mailfile = new CMailFile($object->label, $userTraining->email, $user->email, $mail, [$sendFile["fullname"]], ['application/pdf'], [$sendFile["name"]]);
-
+					$mailfile = new CMailFile("Formation : ".$object->label, $userTraining->email, $user->email, $mail, [$sendFile["fullname"]], ['application/pdf'], [$sendFile["name"]]);
 					$mailfile->sendfile();
 	        	}
 
