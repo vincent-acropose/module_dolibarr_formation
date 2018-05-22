@@ -158,7 +158,7 @@ if (empty($reshook))
 
 		case 'confirm_clone':
 			if (!empty($user->rights->formation->write)) {
-				$clone = $object->clone();
+				$clone = $object->clone_object();
 				if ($clone != -1) {
 
 					$eventLabel = "Formation créé depuis ".$object->ref."";
