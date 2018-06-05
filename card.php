@@ -68,21 +68,11 @@ if (empty($reshook))
 			if (GETPOST('edit') == "edit") {
 				if ($object->status == $object::STATUS_PROGRAM) {
 					$object->status = $object::STATUS_VALIDATED;
-
-					$eventLabel = "Formation ".$object->ref." Déprogrammé";
-					$eventNote = "La formation ".$object->ref." a été déprogrammée par ".$user->login;
-					$object->addEvent($user->id, $eventLabel, $eventNote);
-
 				}
+
 				$object->set_values($_REQUEST); // Set standard attributes
 				
-				if ($object->save() != -1) {
-
-					$eventLabel = "Formation ".$object->ref." Editée";
-					$eventNote = "La formation a été modifier par ".$user->login;
-					$object->addEvent($user->id, $eventLabel, $eventNote);
-
-				}
+				$object->save();
 
 				if (empty($object->errors)) {
 					header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
@@ -97,13 +87,7 @@ if (empty($reshook))
 			$newUser = new User($db);
 			$newUser->fetch(GETPOST('user'));
 
-			if($object->addUser($newUser->id) != -1) {
-
-				$eventLabel = $newUser->login." Ajouté(e) à la formation ".$object->ref;
-				$eventNote = $newUser->firstname." ".$newUser->lastname." a été ajouté(e) à la formation par ".$user->id;
-				$object->addEvent($user->id, $eventLabel, $eventNote);
-
-			}
+			$object->addUser($newUser->id);
 
 			if (empty($object->errors)) {
 				header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
@@ -117,13 +101,7 @@ if (empty($reshook))
 			$oldUser = new User($db);
 			$oldUser->fetch(GETPOST('user'));
 
-			if($object->delUser($oldUser->id) != -1) {
-
-				$eventLabel = $oldUser->login." Supprimé(e) de la formation ".$object->ref;
-				$eventNote = $oldUser->firstname." ".$oldUser->lastname." a été supprimé(e) de la formation par ".$user->id;
-				$object->addEvent($user->id, $eventLabel, $eventNote);
-
-			}
+			$object->delUser($oldUser->id);
 
 			if (empty($object->errors)) {
 				header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
@@ -181,13 +159,7 @@ if (empty($reshook))
 		case 'confirm_valid':
 			if (!empty($user->rights->formation->write)) {
 
-				if ($object->setValid() != -1) {
-
-					$eventLabel = "Formation ".$object->ref." Validée";
-					$eventNote = "La formation ".$object->ref." a été validée par ".$user->login;
-					$object->addEvent($user->id, $eventLabel, $eventNote);
-
-				}
+				$object->setValid();
 
 				if (empty($object->errors)) {
 					header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
@@ -206,13 +178,7 @@ if (empty($reshook))
 		case 'confirm_program':
 			if (!empty($user->rights->formation->write)) {
 
-				if ($object->setProgram() != -1) {
-
-					$eventLabel = "Formation ".$object->ref." Programmé";
-					$eventNote = "La formation ".$object->ref." a été programmée par ".$user->login;
-					$object->addEvent($user->id, $eventLabel, $eventNote);
-
-				}
+				$object->setProgram();
 
 				if (empty($object->errors)) {
 					header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
@@ -237,10 +203,6 @@ if (empty($reshook))
 
 		case 'delfile':
             if (unlink($upload_dir.'/'.$document)) {
-            	
-            	$eventLabel = $fichier." Supprimé de la formation ".$object->ref." par ".$user->login;
-                $eventNote = "Le fichier ".$fichier." a été supprimé par ".$user->firstname." ".$user->lastname;
-                $object->addEvent($user->id, $eventLabel, $eventNote);
 
                 header('Location: '.dol_buildpath('/formation/card.php', 1).'?id='.$object->id);
             }
@@ -394,7 +356,7 @@ if ($id > 0) {
 
 				$tabParticipate .= '<tr class="oddeven"><td>'.$user->getNomUrl(1).'</td>';	
 				$tabParticipate .= '<td>'.$user->job.'</td>';	
-				if ($object->status < $object::STATUS_PROGRAM) $tabParticipate .= '<td><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delUser&user='.$user->id.'"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td>';
+				if ($object->status < $object::STATUS_PROGRAM) $tabParticipate .= '<td><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delUser&user='.$user->id.'"><img src="'.dol_buildpath('/theme/eldy/img/delete.png', 1).'" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td>';
 
 			}
 		}
@@ -428,7 +390,7 @@ if ($id > 0) {
 
 	    print '<tr><td class="titlefield">'.$langs->trans('RefTraining');
 	    print '</td>';
-	    print '<td colspan="2">'.$object->fk_product->getNomUrl(1).' - '.$object->fk_product->label.'</td></tr>';
+	    print '<td colspan="2">'.$object->fk_product->getNomUrl(1).' - '.substr($object->fk_product->label, 0, 30).'</td></tr>';
 
 	    print '<tr><td class="titlefield">'.$langs->trans('DateTraining');
 	    print '</td>';
@@ -511,7 +473,7 @@ if ($id > 0) {
 			print '<td class="linecoldescription">'.$fournisseur->getNomUrl(1).'</td>';
 			print '<td class="linecoldescription">'.number_format($object->fk_product_fournisseur_price->fourn_tva_tx, 2, ',', '').'</td>';
 			print '<td class="linecoldescription">'.number_format($object->fk_product_fournisseur_price->fourn_unitprice, 2, ',', '').'</td>';
-			if ($object->status < $object::STATUS_PROGRAM) print '<td class="linecoldescription"><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delFournPrice"><img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td>';
+			if ($object->status < $object::STATUS_PROGRAM) print '<td class="linecoldescription"><a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&action=delFournPrice"><img src="'.dol_buildpath('/theme/eldy/img/delete.png', 1).'" alt="" title="Supprimer" style="float: right" class="pictodelete"></a></td>';
 
 		}
 
@@ -521,7 +483,7 @@ if ($id > 0) {
 		    print '<tr class="liste_titre nodrag nodrop">';
 		    print '<td class="linecoldescription">'.$langs->trans('AddSupplier').'</td>';
 		    $fournisseur = $form->select_produits_fournisseurs_list(0, "", "fourn_price_id", "", "", $object->fk_product->ref);
-			print '<td class="linecoldescription" colspan="2">'.$fournisseur."</td>";
+			print '<td class="linecoldescription" colspan="3">'.$fournisseur."</td>";
 		    print '<td class="linecoldescription left" colspan="2"><input type="submit" class="button" value="' . $langs->trans("Add") . '"></td>';
 		    print '<td class="linecoldescription left" colspan="2"></td>';
 			print '</tr>';
@@ -534,12 +496,12 @@ if ($id > 0) {
 		    print '<td class="linecoldescription">'.$form->select_company("", "supplierId", "code_fournisseur IS NOT NULL")."</td>";
 		    print '<td class="linecoldescription"><input type="text" name="newSupplierPrice" placeholder="Nouveau prix"></td>';
 		    print '<td class="linecoldescription"><input type="text" name="duree" value="'.number_format($object->duration, 2, ',', '').'" placeholder="' . $langs->trans("Duration") . '"></td>';
-		    print '<td class="linecoldescription"><input type="text" name="tva_tx" placeholder="' . $langs->trans("TVA") . '"></td>';
-		    print '<td class="linecoldescription"><input type="submit" class="button" value="' . $langs->trans("Create") . '"></td>';
+		    print '<td class="linecoldescription"><input type="text" name="tva_tx" value=20></td>';
+		    print '<td class="linecoldescription" colspan=2><input type="submit" class="button" value="' . $langs->trans("Create") . '"></td>';
 			print '</tr>';
 			print '</form>';
 
-			print '<td class="linecoldescription">'.$langs->trans('NoSupplier').'</td>';
+			print '<td class="linecoldescription" colspan=7>'.$langs->trans('NoSupplier').'</td>';
 			
 		}
 

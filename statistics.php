@@ -259,7 +259,7 @@ print '<div class="fichecenter">';
 						foreach ($trainings['year'] as $training) {
 							$subTotal = 0; // Calcul des coût totaux par formation
 
-								if (empty($trainings->users)) {
+								if (empty($training->users)) {
 									$total_reste = $training->total_reste; // Calcul du reste à payer
 
 											print '<tr class="oddeven">';

@@ -81,6 +81,8 @@ Place=Lieu
 AddNewSupplier=Ajouter Prix Fournisseur à la volée
 SendConvocation=Envoyer Convocation
 SendQuestionnaire=Envoyer Questionnaire
+Program=Programmer
+Collaborator=Collaborateur
 
 # FORM LIST
 DateCre=Date Début
