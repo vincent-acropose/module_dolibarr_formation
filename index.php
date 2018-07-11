@@ -187,7 +187,7 @@ else {
 		print '<tr class="oddeven">';
 		print '<td align="left" class="nowrap">'.$object->getNomUrl(1).'</td>';
 		print '<td align="left" class="nowrap">'.date("d/m/Y", strtotime($object->dated)).'</td>';
-		print '<td align="left" class="nowrap">'.$object->label.'</td>';
+		print '<td align="left" class="nowrap">'.substr($object->label, 0, 30).'</td>';
 		print '<td class="nowrap"><a href="/product/card.php?socid=">'.$product->getNomUrl(1).' - '.substr($product->label, 0, 30).'</a></td>';
 		print '<td align="right" class="nowrap">'.$object->LibStatut($obj->fk_statut, 0).'</td>';
 		print '</tr>';

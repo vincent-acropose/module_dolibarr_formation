@@ -49,7 +49,7 @@ class modformation extends DolibarrModules
 		
 		// Id for module (must be unique).
 		// Use here a free id (See in Home -> System information -> Dolibarr for list of used modules id).
-		$this->numero = 1000001; // 104000 to 104999 for ATM CONSULTING
+		$this->numero = 555556; // 104000 to 104999 for ATM CONSULTING
 		// Key text used to identify module (for permissions, menus, etc...)
 		$this->rights_class = 'formation';
 
@@ -90,9 +90,7 @@ class modformation extends DolibarrModules
 		//							'dir' => array('output' => 'othermodulename'),      // To force the default directories names
 		//							'workflow' => array('WORKFLOW_MODULE1_YOURACTIONTYPE_MODULE2'=>array('enabled'=>'! empty($conf->module1->enabled) && ! empty($conf->module2->enabled)', 'picto'=>'yourpicto@formation')) // Set here all workflow context managed by module
 		//                        );
-		$this->module_parts = array(
-			'hooks' => array('usercard')
-		);
+		$this->module_parts = array();
 
 		// Data directories to create when module is enabled.
 		// Example: this->dirs = array("/formation/temp");
@@ -103,7 +101,7 @@ class modformation extends DolibarrModules
 
 		// Dependencies
 		$this->hidden = false;			// A condition to hide module
-		$this->depends = array();		// List of modules id that must be enabled if this module is enabled
+		$this->depends = array('modrh');		// List of modules id that must be enabled if this module is enabled
 		$this->requiredby = array();	// List of modules id to disable if this one is disabled
 		$this->conflictwith = array();	// List of modules id this module is in conflict with
 		$this->phpmin = array(5,0);					// Minimum version of PHP required by module
@@ -141,9 +139,7 @@ class modformation extends DolibarrModules
 		// 'stock'            to add a tab in stock view
 		// 'thirdparty'       to add a tab in third party view
 		// 'user'             to add a tab in user view
-        $this->tabs = array(
-        	'user:+rh:RH:formation@formation:$user->rights->formation->rh:/formation/rh.php?id=__ID__'
-        );
+        $this->tabs = array();
 
         // Dictionaries
 	    if (! isset($conf->formation->enabled))
@@ -198,13 +194,6 @@ class modformation extends DolibarrModules
 		$this->rights[$r][1] = 'Créer/modifier des formations';	// Permission label
 		$this->rights[$r][3] = 1; 					// Permission by default for new user (0/1)
 		$this->rights[$r][4] = 'write';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
-		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
-		$r++;
-
-		$this->rights[$r][0] = $this->numero . $r;	// Permission id (must not be already used)
-		$this->rights[$r][1] = 'Consulter/modifier salaire des collaborateurs';	// Permission label
-		$this->rights[$r][3] = 0; 					// Permission by default for new user (0/1)
-		$this->rights[$r][4] = 'rh';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$this->rights[$r][5] = '';				// In php code, permission will be checked by test if ($user->rights->permkey->level1->level2)
 		$r++;
 

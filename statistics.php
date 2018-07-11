@@ -279,7 +279,7 @@ print '<div class="fichecenter">';
 								else {
 									foreach ($training->users as $trainingUser) {
 										if ($filters['user'] == -1 || ($filters['user'] != -1 && $filters['user'] == $trainingUser->id)) {
-											$total_reste = $training->total_ht/sizeof($training->users) + $rhManager->getSalary($trainingUser->id)->salary*$training->duration - $training->help/sizeof($training->users); // Calcul du reste à payer
+											$total_reste = $training->total_ht/sizeof($training->users) + $rhManager->get("salary", $trainingUser->id)->salary*$training->duration - $training->help/sizeof($training->users); // Calcul du reste à payer
 
 											print '<tr class="oddeven">';
 											print '<td align="center">'.$training->getNomUrl(1).'</td>';
@@ -287,7 +287,7 @@ print '<div class="fichecenter">';
 											print '<td align="center">'.$training->label.'</td>';
 											print '<td align="center">'.$trainingUser->login.'</td>';
 											print '<td align="right">'.number_format($training->total_ht/sizeof($training->users), 2, ',', '').' €</td>';
-											print '<td align="right">'.number_format($rhManager->getSalary($trainingUser->id)->salary*$training->duration, 2, ',', '').' €</td>';
+											print '<td align="right">'.number_format($rhManager->get("salary", $trainingUser->id)->salary*$training->duration, 2, ',', '').' €</td>';
 											print '<td align="right">'.number_format($training->help/sizeof($training->users), 2, ',', '').' €</td>';
 											print '<td align="right">'.number_format($total_reste, 2, ',', '').' €</td>';
 											print '</tr>';
