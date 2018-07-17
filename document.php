@@ -235,7 +235,7 @@ if ($object->id)
             print '<td align="center">&nbsp;</td>';
             print '<td class="valignmiddle right">';
             print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&document='.$file["name"].'&action=delfile" class="editfilelink">';
-            print '<img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" class="pictodelete">';
+            print img_delete();
             print '</a>';
             print '</td>';
 
