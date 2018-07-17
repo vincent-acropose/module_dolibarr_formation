@@ -317,7 +317,7 @@ print '<div class="fichecenter">';
 
 					print '<tr class="oddeven">';
 					print '<td align="center" colspan="8">';
-					print '<a href='.dol_buildpath('formation/documents/Stats.csv', 1).'><button class="button">'.$langs->trans("CSV").'</button></a>';
+					print '<a href="'.DOL_URL_ROOT.'/document.php?modulepart=formation&file=Stats.csv"><button class="button">'.$langs->trans("CSV").'</button></a>';
 					print '</td>';
 					print '</tr>';
 					// END TRAININGS FOUND

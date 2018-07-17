@@ -47,7 +47,7 @@ $object = new Formation($db);
 
 if ($id > 0) {
     $object->fetch($id);
-    $upload_dir = dol_buildpath('/formation/documents');
+    $upload_dir = DOL_DATA_ROOT.'/formation';
 }
 
 
@@ -125,6 +125,8 @@ if ($object->id)
 
 
     $linkback = '<a href="'.dol_buildpath('/formation/list.php', 1).'">'.$langs->trans("BackToList").'</a>';
+
+    $object->next_prev_filter="id";
 
     $morehtmlstatus = $object->getLibStatut();
 
@@ -213,10 +215,10 @@ if ($object->id)
             print '<tr id="row-2231" class="drag drop oddeven">';
 
             print '<td class="tdoverflowmax300">';
-            print '<a class="pictopreview documentpreview" href="'.dol_buildpath('/formation/documents', 1)."/".$file["name"].'" target="_blank">';
+            print '<a class="pictopreview documentpreview" href="'.DOL_URL_ROOT.'/document.php?modulepart=formation&file='.$file["name"].'" target="_blank">';
             print '<img src="'.dol_buildpath("/theme/eldy/img/detail.png", 1).'" alt="" title="Aperçu '.$file["name"].'" class="inline-block valigntextbottom">';
             print '</a>';
-            print '<a class="paddingleft" href="'.dol_buildpath('/formation/documents', 1)."/".$file["name"].'">';
+            print '<a class="paddingleft" href="'.DOL_URL_ROOT.'/document.php?modulepart=formation&file='.$file["name"].'">';
             print '<img src="'.dol_buildpath('/theme/common/mime/'.$image, 1).'" alt="" title="'.$file["name"].' ('.$file["size"]." ".$langs->trans("bytes").')" class="inline-block valigntextbottom"> ';
             print $file["name"];
             print '</a>';

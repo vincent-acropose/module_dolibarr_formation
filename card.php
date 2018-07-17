@@ -21,7 +21,7 @@ $ref = GETPOST('ref');
 $fk_product = GETPOST('fk_product');
 $document=GETPOST('document');
 
-$upload_dir = dol_buildpath('/formation/documents');
+$upload_dir = DOL_DATA_ROOT.'/formation';
 
 $mode = 'view';
 if (empty($user->rights->formation->write)) $mode = 'view'; // Force 'view' mode if can't edit object
@@ -626,10 +626,10 @@ if ($id > 0) {
 	            print '<tr id="row-2231" class="drag drop oddeven">';
 
 	            print '<td class="tdoverflowmax300">';
-	            print '<a class="pictopreview documentpreview" href="'.dol_buildpath('/formation/documents', 1)."/".$file["name"].'" target="_blank">';
+	            print '<a class="pictopreview documentpreview" href="'.DOL_DATA_ROOT."/formation/".$file["name"].'" target="_blank">';
 	            print '<img src="/dolibarr/htdocs/theme/eldy/img/detail.png" alt="" title="Aperçu '.$file["name"].'" class="inline-block valigntextbottom">';
 	            print '</a>';
-	            print '<a class="paddingleft" href="'.dol_buildpath('/formation/documents', 1)."/".$file["name"].'">';
+	            print '<a class="paddingleft" href="'.DOL_DATA_ROOT."/formation/".$file["name"].'">';
 	            print '<img src="/dolibarr/htdocs/theme/common/mime/'.$image.'" alt="" title="'.$file["name"].' ('.$file["size"]." ".$langs->trans("bytes").')" class="inline-block valigntextbottom"> ';
 	            print $file["name"];
 	            print '</a>';
