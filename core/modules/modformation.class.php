@@ -94,7 +94,7 @@ class modformation extends DolibarrModules
 
 		// Data directories to create when module is enabled.
 		// Example: this->dirs = array("/formation/temp");
-		$this->dirs = array();
+		$this->dirs = array("/formation");
 
 		// Config pages. Put here list of php page, stored into formation/admin directory, to use to setup module.
 		$this->config_page_url = array("formation_setup.php@formation");

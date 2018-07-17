@@ -185,7 +185,7 @@ if ($object->id)
 
     print '<table class="centpercent notopnoleftnoright" style="margin-bottom: 2px;"><tbody>';
     print '<tr>';
-    print '<td class="nobordernopadding widthpictotitle" valign="middle"><img src="/dolibarr/htdocs/theme/eldy/img/title_generic.png" alt="" title="" class="valignmiddle" id="pictotitle"></td>';
+    print '<td class="nobordernopadding widthpictotitle" valign="middle"><img src="'.dol_buildpath("/theme/eldy/img/title_generic.png", 1).'" alt="" title="" class="valignmiddle" id="pictotitle"></td>';
     print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$langs->trans('joinFile').'</div></td>';
     print '</tr>';
     print '</tbody></table>';
@@ -194,9 +194,9 @@ if ($object->id)
     print '<table id="tablelines" class="liste" width="100%"><tbody>';
 
     print '<tr class="liste_titre nodrag nodrop">';
-    print '<th class="liste_titre" align="left"><a href="/dolibarr/htdocs/product/document.php?sortfield=name&amp;sortorder=asc&amp;begin=&amp;id=32&amp;id=32">'.$langs->trans('joinFile').'</a></th>';
-    print '<th class="liste_titre" align="center"><a href="/dolibarr/htdocs/product/document.php?sortfield=size&amp;sortorder=asc&amp;begin=&amp;id=32&amp;id=32">'.$langs->trans('Size').'</a></th>';
-    print '<th class="liste_titre" align="center"><a href="/dolibarr/htdocs/product/document.php?sortfield=date&amp;sortorder=asc&amp;begin=&amp;id=32&amp;id=32">'.$langs->trans('Date').'</a></th>';
+    print '<th class="liste_titre" align="left">'.$langs->trans('joinFile').'</th>';
+    print '<th class="liste_titre" align="center">'.$langs->trans('Size').'</th>';
+    print '<th class="liste_titre" align="center">'.$langs->trans('Date').'</th>';
     print '<th class="liste_titre" align="center"></th>';
     print '<th class="liste_titre"></th>';
     print '<th class="liste_titre"></th>';
@@ -214,10 +214,10 @@ if ($object->id)
 
             print '<td class="tdoverflowmax300">';
             print '<a class="pictopreview documentpreview" href="'.dol_buildpath('/formation/documents', 1)."/".$file["name"].'" target="_blank">';
-            print '<img src="/dolibarr/htdocs/theme/eldy/img/detail.png" alt="" title="Aperçu '.$file["name"].'" class="inline-block valigntextbottom">';
+            print '<img src="'.dol_buildpath("/theme/eldy/img/detail.png", 1).'" alt="" title="Aperçu '.$file["name"].'" class="inline-block valigntextbottom">';
             print '</a>';
             print '<a class="paddingleft" href="'.dol_buildpath('/formation/documents', 1)."/".$file["name"].'">';
-            print '<img src="/dolibarr/htdocs/theme/common/mime/'.$image.'" alt="" title="'.$file["name"].' ('.$file["size"]." ".$langs->trans("bytes").')" class="inline-block valigntextbottom"> ';
+            print '<img src="'.dol_buildpath('/theme/common/mime/'.$image, 1).'" alt="" title="'.$file["name"].' ('.$file["size"]." ".$langs->trans("bytes").')" class="inline-block valigntextbottom"> ';
             print $file["name"];
             print '</a>';
             print '</td>';
