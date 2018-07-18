@@ -648,14 +648,14 @@ if ($id > 0) {
 	            print '<td align="center">&nbsp;</td>';
 	            print '<td class="valignmiddle right">';
 	            print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&document='.$file["name"].'&action=send" class="editfilelink">';
-	            print '<img src="/dolibarr/htdocs/theme/common/octicons/lib/svg/mail.svg" alt="" title="Envoyer Par Mail" class="pictomail">';
+	            print '<img src="'.DOL_URL_ROOT.'/theme/common/octicons/lib/svg/mail.svg" alt="" title="Envoyer Par Mail" class="pictomail">';
 	            print '</a>';
 	            print '</td>';
 
 	            print '<td align="center">&nbsp;</td>';
 	            print '<td class="valignmiddle right">';
 	            print '<a href="'.$_SERVER["PHP_SELF"].'?id='.$object->id.'&document='.$file["name"].'&action=delfile" class="editfilelink">';
-	            print '<img src="/dolibarr/htdocs/theme/eldy/img/delete.png" alt="" title="Supprimer" class="pictodelete">';
+	            print img_delete();
 	            print '</a>';
 	            print '</td>';
 
