@@ -597,7 +597,7 @@ if ($id > 0) {
 
 	    print '<table class="centpercent notopnoleftnoright" style="margin-top: 20px;"><tbody>';
 	    print '<tr>';
-	    print '<td class="nobordernopadding widthpictotitle" valign="middle"><img src="/dolibarr/htdocs/theme/eldy/img/title_generic.png" alt="" title="" class="valignmiddle" id="pictotitle"></td>';
+	    print '<td class="nobordernopadding widthpictotitle" valign="middle"><img src="'.DOL_URL_ROOT.'/theme/eldy/img/title_generic.png" alt="" title="" class="valignmiddle" id="pictotitle"></td>';
 	    print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$langs->trans('joinFile').'</div></td>';
 	    print '</tr>';
 	    print '</tbody></table>';
@@ -627,10 +627,10 @@ if ($id > 0) {
 
 	            print '<td class="tdoverflowmax300">';
 	            print '<a class="pictopreview documentpreview" href="'.DOL_DATA_ROOT."/formation/".$file["name"].'" target="_blank">';
-	            print '<img src="/dolibarr/htdocs/theme/eldy/img/detail.png" alt="" title="Aperçu '.$file["name"].'" class="inline-block valigntextbottom">';
+	            print '<img src="'.DOL_URL_ROOT.'/theme/eldy/img/detail.png" alt="" title="Aperçu '.$file["name"].'" class="inline-block valigntextbottom">';
 	            print '</a>';
 	            print '<a class="paddingleft" href="'.DOL_DATA_ROOT."/formation/".$file["name"].'">';
-	            print '<img src="/dolibarr/htdocs/theme/common/mime/'.$image.'" alt="" title="'.$file["name"].' ('.$file["size"]." ".$langs->trans("bytes").')" class="inline-block valigntextbottom"> ';
+	            print '<img src="'.DOL_URL_ROOT.'/theme/common/mime/'.$image.'" alt="" title="'.$file["name"].' ('.$file["size"]." ".$langs->trans("bytes").')" class="inline-block valigntextbottom"> ';
 	            print $file["name"];
 	            print '</a>';
 	            print '</td>';
