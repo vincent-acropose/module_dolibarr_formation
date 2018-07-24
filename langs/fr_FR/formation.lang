@@ -7,6 +7,7 @@ formationSetup = Configuration du module formation
 formationAbout = A propos du module formation
 
 formation=Formation
+Trainings=Formations
 
 # LIENS
 Showformation=Afficher formation

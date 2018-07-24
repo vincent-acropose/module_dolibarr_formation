@@ -557,7 +557,7 @@ if ($id > 0) {
 		print '<input type="hidden" name="action" value="addUser">';
 		print '<tbody>';
 		print '<tr>';
-		print '<td class="nobordernopadding widthpictotitle" valign="middle"><img src="/dolibarr/htdocs/theme/eldy/img/title_commercial.png" alt="" title="" class="valignmiddle" id="pictotitle"></td>';
+		print '<td class="nobordernopadding widthpictotitle" valign="middle"><img src="'.DOL_URL_ROOT.'/theme/eldy/img/title_commercial.png" alt="" title="" class="valignmiddle" id="pictotitle"></td>';
 		print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$langs->trans('Collaborator').'</div></td>';
 		if ($object->status <= $object::STATUS_VALIDATED) {
 			print '<td class="nobordernopadding" valign="middle"><div class="titre">'.$form->select_dolusers('', 'user', 1, $exclude, 0, '', '', $object->entity, 0, 0, '', 0, '', 'maxwidth300',1).'</div></td>';
